@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CouplesBreath Client</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin:0; }
+    .wrap { padding: 16px; }
+    .btn { padding: 12px 16px; margin-right: 8px; border: 0; border-radius: 8px; cursor: pointer; }
+    .start { background: #2563eb; color: white; }
+    .stop { background: #ef4444; color: white; }
+    #status { margin-top: 8px; font-size: 14px; color: #555; }
+    #overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+      display: none; align-items: center; justify-content: center; text-align: center; color: #fff; padding: 24px;
+    }
+    #overlay .box { max-width: 520px; }
+    #overlay h1 { margin: 0 0 8px; font-size: 28px; }
+    #overlay p { margin: 0; font-size: 18px; line-height: 1.5; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <button id="startBtn" class="btn start">Start</button>
+    <button id="stopBtn" class="btn stop" disabled>Stop</button>
+    <div id="status">Ready.</div>
+  </div>
+  <div id="overlay">
+    <div class="box">
+      <h1>Time to pause</h1>
+      <p>Let’s take three slow breaths together.</p>
+    </div>
+  </div>
+
+  <script>
+    const WS_URL = "wss://pause-proxy.onrender.com/client"; // your Render proxy
+    let ws, mediaStream, audioCtx, processor, source, ttsSpeaking = false;
+
+    function b64FromBuffer(buf) {
+      let binary = "";
+      const bytes = new Uint8Array(buf);
+      for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+      return btoa(binary);
+    }
+    function showOverlay(on) { document.getElementById('overlay').style.display = on ? 'flex' : 'none'; }
+    async function speak(text) {
+      try {
+        const u = new SpeechSynthesisUtterance(text);
+        u.rate = 0.9; u.lang = "en-US";
+        ttsSpeaking = true; u.onend = () => (ttsSpeaking = false);
+        speechSynthesis.cancel(); speechSynthesis.speak(u);
+      } catch {}
+    }
+    function setStatus(s) { document.getElementById('status').textContent = s; }
+
+    async function start() {
+      try {
+        setStatus("Requesting microphone permission…");
+        mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true }); // requires HTTPS + user gesture
+        setStatus("Opening WebSocket…");
+        ws = new WebSocket(WS_URL);
+
+        ws.onopen = async () => {
+          setStatus("Connected. Starting audio stream…");
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+          source = audioCtx.createMediaStreamSource(mediaStream);
+          processor = audioCtx.createScriptProcessor(2048, 1, 1);
+          source.connect(processor); processor.connect(audioCtx.destination);
+
+          const bytesPerSample = 2, chunkMs = 800;
+          const samplesPerChunk = Math.round(16000 * (chunkMs / 1000));
+          const bytesPerChunk = samplesPerChunk * bytesPerSample;
+          let buffer = new Uint8Array(0);
+
+          processor.onaudioprocess = (e) => {
+            const input = e.inputBuffer.getChannelData(0);
+            const pcm = new Int16Array(input.length);
+            for (let i = 0; i < input.length; i++) {
+              let s = Math.max(-1, Math.min(1, input[i]));
+              pcm[i] = s < 0 ? s * 0x8000 : s * 0x7fff; // Float32 -> PCM16
+            }
+            const bytes = new Uint8Array(pcm.buffer);
+
+            // append to rolling buffer
+            const combined = new Uint8Array(buffer.length + bytes.length);
+            combined.set(buffer, 0); combined.set(bytes, buffer.length); buffer = combined;
+
+            // send fixed-size chunks
+            while (buffer.length >= bytesPerChunk) {
+              const chunk = buffer.slice(0, bytesPerChunk);
+              buffer = buffer.slice(bytesPerChunk);
+              const b64 = b64FromBuffer(chunk.buffer);
+              if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: "audio", data_b64: b64 }));
+              }
+            }
+          };
+
+          showOverlay(false);
+          document.getElementById('startBtn').disabled = true;
+          document.getElementById('stopBtn').disabled = false;
+        };
+
+        ws.onmessage = (evt) => {
+          try {
+            const msg = JSON.parse(evt.data);
+            if (msg.type === "trigger") {
+              showOverlay(true);
+              if (!ttsSpeaking) {
+                speak("Let's pause and take three slow breaths together. Inhale and exhale. Inhale and exhale. Inhale and exhale.");
+              }
+            }
+          } catch {}
+        };
+
+        ws.onclose = () => { setStatus("Disconnected."); cleanup(); };
+        ws.onerror = () => { setStatus("WebSocket error."); cleanup(); };
+      } catch (e) {
+        console.error(e); setStatus("Error: " + e.message); cleanup();
+      }
+    }
+
+    function cleanup() {
+      try { if (processor) processor.disconnect(); } catch {}
+      try { if (source) source.disconnect(); } catch {}
+      try { if (audioCtx) audioCtx.close(); } catch {}
+      try { if (mediaStream) mediaStream.getTracks().forEach(t => t.stop()); } catch {}
+      try { if (ws && ws.readyState === WebSocket.OPEN) ws.close(); } catch {}
+      showOverlay(false);
+      document.getElementById('startBtn').disabled = false;
+      document.getElementById('stopBtn').disabled = true;
+    }
+
+    document.getElementById('startBtn').onclick = start;
+    document.getElementById('stopBtn').onclick = cleanup;
+  </script>
+</body>
+</html>
