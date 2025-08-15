@@ -1,139 +1,244 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>CouplesBreath Client</title>
-  <style>
-    body { font-family: system-ui, sans-serif; margin:0; }
-    .wrap { padding: 16px; }
-    .btn { padding: 12px 16px; margin-right: 8px; border: 0; border-radius: 8px; cursor: pointer; }
-    .start { background: #2563eb; color: white; }
-    .stop { background: #ef4444; color: white; }
-    #status { margin-top: 8px; font-size: 14px; color: #555; }
-    #overlay {
-      position: fixed; inset: 0; background: rgba(0,0,0,0.6);
-      display: none; align-items: center; justify-content: center; text-align: center; color: #fff; padding: 24px;
-    }
-    #overlay .box { max-width: 520px; }
-    #overlay h1 { margin: 0 0 8px; font-size: 28px; }
-    #overlay p { margin: 0; font-size: 18px; line-height: 1.5; }
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>CouplesBreath – Monitor</title>
+<style>
+  body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; margin: 0; background:#0b1220; color:#e8eefc; }
+  .wrap { max-width: 640px; margin: 24px auto; padding: 16px; }
+  .card { background: #141c2f; border-radius: 16px; padding: 20px; box-shadow: 0 8px 24px rgba(0,0,0,.25); }
+  button { padding: 12px 16px; border-radius: 10px; border: 0; font-weight: 600; cursor: pointer; }
+  .start { background:#4ade80; color:#06210e; }
+  .stop { background:#ef4444; color:#fff; margin-left: 8px; }
+  .log { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: pre-wrap; background:#0d1424; border-radius:12px; padding:12px; height: 160px; overflow:auto; margin-top: 12px; }
+  .overlay {
+    position: fixed; inset: 0; display:none; align-items:center; justify-content:center;
+    background: rgba(8, 14, 28, .86); z-index: 9999;
+  }
+  .overlay .panel {
+    background: #10192c; border: 2px solid #4ade80; color:#eafff0;
+    border-radius: 20px; padding: 24px; text-align:center; width:min(90vw,480px);
+    box-shadow: 0 12px 36px rgba(0,0,0,.5);
+  }
+  .muted { opacity: .7; }
+</style>
 </head>
 <body>
-  <div class="wrap">
-    <button id="startBtn" class="btn start">Start</button>
-    <button id="stopBtn" class="btn stop" disabled>Stop</button>
-    <div id="status">Ready.</div>
-  </div>
-  <div id="overlay">
-    <div class="box">
-      <h1>Time to pause</h1>
-      <p>Let’s take three slow breaths together.</p>
+<div class="wrap">
+  <div class="card">
+    <h2>CouplesBreath</h2>
+    <p class="muted">Tap Start, allow the mic, talk normally, then raise intensity for a few seconds.</p>
+    <div>
+      <button id="btnStart" class="start">Start</button>
+      <button id="btnStop" class="stop" disabled>Stop</button>
     </div>
+    <div class="log" id="log"></div>
   </div>
+</div>
 
-  <script>
-    const WS_URL = "wss://pause-proxy.onrender.com/client"; // your Render proxy
-    let ws, mediaStream, audioCtx, processor, source, ttsSpeaking = false;
+<div class="overlay" id="overlay">
+  <div class="panel">
+    <h3>Let’s pause and breathe</h3>
+    <p>Take 3 slow breaths together. In… out…</p>
+    <button id="btnDismiss" class="start">Resume</button>
+  </div>
+</div>
 
-    function b64FromBuffer(buf) {
-      let binary = "";
-      const bytes = new Uint8Array(buf);
-      for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
-      return btoa(binary);
-    }
-    function showOverlay(on) { document.getElementById('overlay').style.display = on ? 'flex' : 'none'; }
-    async function speak(text) {
-      try {
-        const u = new SpeechSynthesisUtterance(text);
-        u.rate = 0.9; u.lang = "en-US";
-        ttsSpeaking = true; u.onend = () => (ttsSpeaking = false);
-        speechSynthesis.cancel(); speechSynthesis.speak(u);
-      } catch {}
-    }
-    function setStatus(s) { document.getElementById('status').textContent = s; }
+<script>
+const WS_URL = 'wss://pause-proxy.onrender.com/client';
 
-    async function start() {
-      try {
-        setStatus("Requesting microphone permission…");
-        mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true }); // requires HTTPS + user gesture
-        setStatus("Opening WebSocket…");
-        ws = new WebSocket(WS_URL);
+const logEl = document.getElementById('log');
+const overlay = document.getElementById('overlay');
+const btnStart = document.getElementById('btnStart');
+const btnStop = document.getElementById('btnStop');
+const btnDismiss = document.getElementById('btnDismiss');
 
-        ws.onopen = async () => {
-          setStatus("Connected. Starting audio stream…");
-          audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
-          source = audioCtx.createMediaStreamSource(mediaStream);
-          processor = audioCtx.createScriptProcessor(2048, 1, 1);
-          source.connect(processor); processor.connect(audioCtx.destination);
+let ws = null;
+let mediaStream = null;
+let mediaRecorder = null;
+let tts;
+let usingRecorder = false;
+let usingWavFallback = false;
 
-          const bytesPerSample = 2, chunkMs = 800;
-          const samplesPerChunk = Math.round(16000 * (chunkMs / 1000));
-          const bytesPerChunk = samplesPerChunk * bytesPerSample;
-          let buffer = new Uint8Array(0);
+// ---------- utils ----------
+function log(...args){ const line = args.map(a => typeof a === 'string' ? a : JSON.stringify(a)).join(' '); logEl.textContent += line + '\n'; logEl.scrollTop = logEl.scrollHeight; }
+function b64FromUint8(u8){ // fast base64
+  let bin=''; for (let i=0;i<u8.length;i++) bin += String.fromCharCode(u8[i]);
+  return btoa(bin);
+}
+function speak(text){
+  try{
+    if (!window.speechSynthesis) return;
+    const ut = new SpeechSynthesisUtterance(text);
+    ut.rate = 0.9; ut.pitch = 1.0;
+    window.speechSynthesis.cancel(); window.speechSynthesis.speak(ut);
+  }catch{}
+}
+function showOverlay(){
+  overlay.style.display = 'flex';
+  speak("Let's pause and take three slow breaths together.");
+}
+function hideOverlay(){ overlay.style.display = 'none'; }
 
-          processor.onaudioprocess = (e) => {
-            const input = e.inputBuffer.getChannelData(0);
-            const pcm = new Int16Array(input.length);
-            for (let i = 0; i < input.length; i++) {
-              let s = Math.max(-1, Math.min(1, input[i]));
-              pcm[i] = s < 0 ? s * 0x8000 : s * 0x7fff; // Float32 -> PCM16
-            }
-            const bytes = new Uint8Array(pcm.buffer);
+// ---------- WAV fallback (when MediaRecorder is unavailable) ----------
+let audioCtx, processor, micSource;
+let wavBuffer = [];
+let wavSampleRate = 48000;
+const CHUNK_MS = 700; // ~0.7s per message (well under 5s limit)
 
-            // append to rolling buffer
-            const combined = new Uint8Array(buffer.length + bytes.length);
-            combined.set(buffer, 0); combined.set(bytes, buffer.length); buffer = combined;
+function floatTo16BitPCM(float32Array){
+  const out = new Int16Array(float32Array.length);
+  for (let i = 0; i < float32Array.length; i++){
+    let s = Math.max(-1, Math.min(1, float32Array[i]));
+    out[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+  }
+  return out;
+}
 
-            // send fixed-size chunks
-            while (buffer.length >= bytesPerChunk) {
-              const chunk = buffer.slice(0, bytesPerChunk);
-              buffer = buffer.slice(bytesPerChunk);
-              const b64 = b64FromBuffer(chunk.buffer);
-              if (ws && ws.readyState === WebSocket.OPEN) {
-                ws.send(JSON.stringify({ type: "audio", data_b64: b64 }));
-              }
-            }
-          };
+function makeWavBlobFromFrames(frames, sampleRate){
+  // concat Int16 frames
+  let totalSamples = 0;
+  for (const f of frames) totalSamples += f.length;
+  const pcm = new Int16Array(totalSamples);
+  let offset = 0;
+  for (const f of frames){ pcm.set(f, offset); offset += f.length; }
 
-          showOverlay(false);
-          document.getElementById('startBtn').disabled = true;
-          document.getElementById('stopBtn').disabled = false;
-        };
+  // WAV header (PCM, mono)
+  const blockAlign = 2; // 16-bit mono
+  const byteRate = sampleRate * blockAlign;
+  const dataSize = pcm.length * 2;
+  const headerSize = 44;
+  const buffer = new ArrayBuffer(headerSize + dataSize);
+  const view = new DataView(buffer);
 
-        ws.onmessage = (evt) => {
-          try {
-            const msg = JSON.parse(evt.data);
-            if (msg.type === "trigger") {
-              showOverlay(true);
-              if (!ttsSpeaking) {
-                speak("Let's pause and take three slow breaths together. Inhale and exhale. Inhale and exhale. Inhale and exhale.");
-              }
-            }
-          } catch {}
-        };
+  // RIFF
+  writeString(view, 0, 'RIFF');
+  view.setUint32(4, 36 + dataSize, true);
+  writeString(view, 8, 'WAVE');
+  // fmt  subchunk
+  writeString(view, 12, 'fmt ');
+  view.setUint32(16, 16, true); // PCM
+  view.setUint16(20, 1, true);  // PCM
+  view.setUint16(22, 1, true);  // mono
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, byteRate, true);
+  view.setUint16(32, blockAlign, true);
+  view.setUint16(34, 16, true); // bits per sample
+  // data subchunk
+  writeString(view, 36, 'data');
+  view.setUint32(40, dataSize, true);
+  // PCM data
+  const out = new Uint8Array(buffer);
+  out.set(new Uint8Array(pcm.buffer), 44);
+  return new Blob([out], { type: 'audio/wav' });
 
-        ws.onclose = () => { setStatus("Disconnected."); cleanup(); };
-        ws.onerror = () => { setStatus("WebSocket error."); cleanup(); };
-      } catch (e) {
-        console.error(e); setStatus("Error: " + e.message); cleanup();
+  function writeString(dv, offset, s){
+    for (let i=0;i<s.length;i++){ dv.setUint8(offset+i, s.charCodeAt(i)); }
+  }
+}
+
+// ---------- streaming ----------
+async function start(){
+  btnStart.disabled = true; btnStop.disabled = false;
+  log('starting…');
+
+  ws = new WebSocket(WS_URL);
+  ws.onopen = () => log('[web] ws open');
+  ws.onclose = (e) => log('[web] ws close', e.code, e.reason || '');
+  ws.onerror = (e) => log('[web] ws error', e.message || '');
+
+  // When proxy sends risk/trigger
+  ws.onmessage = (ev) => {
+    try{
+      const msg = JSON.parse(ev.data);
+      if (msg.type === 'risk') {
+        // optional: show rolling risk
+        // log('[risk]', JSON.stringify(msg));
+      } else if (msg.type === 'trigger') {
+        log('[trigger]', JSON.stringify(msg));
+        showOverlay();
+      } else if (msg.type === 'hume') {
+        log('[hume]', msg.status);
       }
-    }
+    }catch{}
+  };
 
-    function cleanup() {
-      try { if (processor) processor.disconnect(); } catch {}
-      try { if (source) source.disconnect(); } catch {}
-      try { if (audioCtx) audioCtx.close(); } catch {}
-      try { if (mediaStream) mediaStream.getTracks().forEach(t => t.stop()); } catch {}
-      try { if (ws && ws.readyState === WebSocket.OPEN) ws.close(); } catch {}
-      showOverlay(false);
-      document.getElementById('startBtn').disabled = false;
-      document.getElementById('stopBtn').disabled = true;
-    }
+  // mic
+  try {
+    mediaStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+  } catch (err) {
+    log('mic error:', err.message || err);
+    btnStart.disabled = false; btnStop.disabled = true;
+    return;
+  }
 
-    document.getElementById('startBtn').onclick = start;
-    document.getElementById('stopBtn').onclick = cleanup;
-  </script>
+  // Prefer MediaRecorder (WEBM/Opus), else WAV fallback
+  if (window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+    usingRecorder = true;
+    usingWavFallback = false;
+    const mime = 'audio/webm;codecs=opus';
+    mediaRecorder = new MediaRecorder(mediaStream, { mimeType: mime });
+
+    mediaRecorder.ondataavailable = async (event) => {
+      if (!event.data || event.data.size === 0) return;
+      const buf = new Uint8Array(await event.data.arrayBuffer());
+      const b64 = b64FromUint8(buf);
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'audio', data_b64: b64 }));
+      }
+    };
+    mediaRecorder.start(CHUNK_MS);
+    log('recording with MediaRecorder (WEBM/Opus)…');
+  } else {
+    // WAV fallback
+    usingRecorder = false;
+    usingWavFallback = true;
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 48000 });
+    wavSampleRate = audioCtx.sampleRate; // use device rate
+    micSource = audioCtx.createMediaStreamSource(mediaStream);
+    processor = audioCtx.createScriptProcessor(4096, 1, 1);
+    let nextFlushAt = performance.now() + CHUNK_MS;
+
+    processor.onaudioprocess = (e) => {
+      const input = e.inputBuffer.getChannelData(0);
+      wavBuffer.push(floatTo16BitPCM(input));
+
+      const now = performance.now();
+      if (now >= nextFlushAt) {
+        nextFlushAt = now + CHUNK_MS;
+        // Build a tiny WAV file for this slice
+        const wavBlob = makeWavBlobFromFrames(wavBuffer, wavSampleRate);
+        wavBuffer = [];
+        wavBlob.arrayBuffer().then(ab => {
+          const b64 = b64FromUint8(new Uint8Array(ab));
+          if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: 'audio', data_b64: b64 }));
+          }
+        });
+      }
+    };
+
+    micSource.connect(processor);
+    processor.connect(audioCtx.destination);
+    log('recording with WAV fallback…');
+  }
+}
+
+function stop(){
+  try { if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop(); } catch{}
+  try { if (processor) processor.disconnect(); } catch{}
+  try { if (micSource) micSource.disconnect(); } catch{}
+  try { if (audioCtx) audioCtx.close(); } catch{}
+  try { if (mediaStream) mediaStream.getTracks().forEach(t => t.stop()); } catch{}
+  try { if (ws && ws.readyState === WebSocket.OPEN) ws.close(1000, 'done'); } catch{}
+  btnStart.disabled = false; btnStop.disabled = true;
+  log('stopped.');
+}
+
+btnStart.addEventListener('click', start);
+btnStop.addEventListener('click', stop);
+btnDismiss.addEventListener('click', hideOverlay);
+</script>
 </body>
 </html>
