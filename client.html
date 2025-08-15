@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>CouplesBreath – Monitor</title>
+<title>CouplesBreath – Monitor (WAV)</title>
 <style>
   body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; margin: 0; background:#0b1220; color:#e8eefc; }
   .wrap { max-width: 640px; margin: 24px auto; padding: 16px; }
@@ -47,6 +47,7 @@
 
 <script>
 const WS_URL = 'wss://pause-proxy.onrender.com/client';
+const CHUNK_MS = 700; // keep well under Hume’s ~5s/message limit
 
 const logEl = document.getElementById('log');
 const overlay = document.getElementById('overlay');
@@ -56,36 +57,15 @@ const btnDismiss = document.getElementById('btnDismiss');
 
 let ws = null;
 let mediaStream = null;
-let mediaRecorder = null;
-let tts;
-let usingRecorder = false;
-let usingWavFallback = false;
-
-// ---------- utils ----------
-function log(...args){ const line = args.map(a => typeof a === 'string' ? a : JSON.stringify(a)).join(' '); logEl.textContent += line + '\n'; logEl.scrollTop = logEl.scrollHeight; }
-function b64FromUint8(u8){ // fast base64
-  let bin=''; for (let i=0;i<u8.length;i++) bin += String.fromCharCode(u8[i]);
-  return btoa(bin);
-}
-function speak(text){
-  try{
-    if (!window.speechSynthesis) return;
-    const ut = new SpeechSynthesisUtterance(text);
-    ut.rate = 0.9; ut.pitch = 1.0;
-    window.speechSynthesis.cancel(); window.speechSynthesis.speak(ut);
-  }catch{}
-}
-function showOverlay(){
-  overlay.style.display = 'flex';
-  speak("Let's pause and take three slow breaths together.");
-}
-function hideOverlay(){ overlay.style.display = 'none'; }
-
-// ---------- WAV fallback (when MediaRecorder is unavailable) ----------
 let audioCtx, processor, micSource;
 let wavBuffer = [];
 let wavSampleRate = 48000;
-const CHUNK_MS = 700; // ~0.7s per message (well under 5s limit)
+
+function log(...args){ const line = args.map(a => typeof a === 'string' ? a : JSON.stringify(a)).join(' '); logEl.textContent += line + '\n'; logEl.scrollTop = logEl.scrollHeight; }
+function b64FromUint8(u8){ let bin=''; for (let i=0;i<u8.length;i++) bin += String.fromCharCode(u8[i]); return btoa(bin); }
+function speak(text){ try{ if (!window.speechSynthesis) return; const ut = new SpeechSynthesisUtterance(text); ut.rate = 0.9; window.speechSynthesis.cancel(); window.speechSynthesis.speak(ut);}catch{} }
+function showOverlay(){ overlay.style.display = 'flex'; speak("Let's pause and take three slow breaths together."); }
+function hideOverlay(){ overlay.style.display = 'none'; }
 
 function floatTo16BitPCM(float32Array){
   const out = new Int16Array(float32Array.length);
@@ -112,33 +92,27 @@ function makeWavBlobFromFrames(frames, sampleRate){
   const buffer = new ArrayBuffer(headerSize + dataSize);
   const view = new DataView(buffer);
 
-  // RIFF
-  writeString(view, 0, 'RIFF');
+  writeStr(view, 0, 'RIFF');
   view.setUint32(4, 36 + dataSize, true);
-  writeString(view, 8, 'WAVE');
-  // fmt  subchunk
-  writeString(view, 12, 'fmt ');
-  view.setUint32(16, 16, true); // PCM
-  view.setUint16(20, 1, true);  // PCM
+  writeStr(view, 8, 'WAVE');
+  writeStr(view, 12, 'fmt ');
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
   view.setUint16(22, 1, true);  // mono
   view.setUint32(24, sampleRate, true);
   view.setUint32(28, byteRate, true);
   view.setUint16(32, blockAlign, true);
-  view.setUint16(34, 16, true); // bits per sample
-  // data subchunk
-  writeString(view, 36, 'data');
+  view.setUint16(34, 16, true);
+  writeStr(view, 36, 'data');
   view.setUint32(40, dataSize, true);
-  // PCM data
+
   const out = new Uint8Array(buffer);
   out.set(new Uint8Array(pcm.buffer), 44);
   return new Blob([out], { type: 'audio/wav' });
 
-  function writeString(dv, offset, s){
-    for (let i=0;i<s.length;i++){ dv.setUint8(offset+i, s.charCodeAt(i)); }
-  }
+  function writeStr(dv, offset, s){ for (let i=0;i<s.length;i++){ dv.setUint8(offset+i, s.charCodeAt(i)); } }
 }
 
-// ---------- streaming ----------
 async function start(){
   btnStart.disabled = true; btnStop.disabled = false;
   log('starting…');
@@ -147,24 +121,16 @@ async function start(){
   ws.onopen = () => log('[web] ws open');
   ws.onclose = (e) => log('[web] ws close', e.code, e.reason || '');
   ws.onerror = (e) => log('[web] ws error', e.message || '');
-
-  // When proxy sends risk/trigger
   ws.onmessage = (ev) => {
-    try{
+    try {
       const msg = JSON.parse(ev.data);
-      if (msg.type === 'risk') {
-        // optional: show rolling risk
-        // log('[risk]', JSON.stringify(msg));
-      } else if (msg.type === 'trigger') {
-        log('[trigger]', JSON.stringify(msg));
-        showOverlay();
-      } else if (msg.type === 'hume') {
-        log('[hume]', msg.status);
-      }
-    }catch{}
+      if (msg.type === 'trigger') { log('[trigger]', msg); showOverlay(); }
+      else if (msg.type === 'hume') { log('[hume]', msg.status); }
+      // optional: log risks
+      // else if (msg.type === 'risk') { log('[risk]', msg.hyper, msg.hypo); }
+    } catch {}
   };
 
-  // mic
   try {
     mediaStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
   } catch (err) {
@@ -173,72 +139,49 @@ async function start(){
     return;
   }
 
-  // Prefer MediaRecorder (WEBM/Opus), else WAV fallback
-  if (window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
-    usingRecorder = true;
-    usingWavFallback = false;
-    const mime = 'audio/webm;codecs=opus';
-    mediaRecorder = new MediaRecorder(mediaStream, { mimeType: mime });
+  // WAV path only (self-contained per chunk)
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 48000 });
+  wavSampleRate = audioCtx.sampleRate;
+  micSource = audioCtx.createMediaStreamSource(mediaStream);
+  processor = audioCtx.createScriptProcessor(4096, 1, 1);
+  let nextFlushAt = performance.now() + CHUNK_MS;
 
-    mediaRecorder.ondataavailable = async (event) => {
-      if (!event.data || event.data.size === 0) return;
-      const buf = new Uint8Array(await event.data.arrayBuffer());
-      const b64 = b64FromUint8(buf);
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ type: 'audio', data_b64: b64 }));
-      }
-    };
-    mediaRecorder.start(CHUNK_MS);
-    log('recording with MediaRecorder (WEBM/Opus)…');
-  } else {
-    // WAV fallback
-    usingRecorder = false;
-    usingWavFallback = true;
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 48000 });
-    wavSampleRate = audioCtx.sampleRate; // use device rate
-    micSource = audioCtx.createMediaStreamSource(mediaStream);
-    processor = audioCtx.createScriptProcessor(4096, 1, 1);
-    let nextFlushAt = performance.now() + CHUNK_MS;
+  processor.onaudioprocess = (e) => {
+    const input = e.inputBuffer.getChannelData(0);
+    wavBuffer.push(floatTo16BitPCM(input));
 
-    processor.onaudioprocess = (e) => {
-      const input = e.inputBuffer.getChannelData(0);
-      wavBuffer.push(floatTo16BitPCM(input));
+    const now = performance.now();
+    if (now >= nextFlushAt) {
+      nextFlushAt = now + CHUNK_MS;
+      const wavBlob = makeWavBlobFromFrames(wavBuffer, wavSampleRate);
+      wavBuffer = [];
+      wavBlob.arrayBuffer().then(ab => {
+        const b64 = b64FromUint8(new Uint8Array(ab));
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: 'audio', data_b64: b64 }));
+        }
+      });
+    }
+  };
 
-      const now = performance.now();
-      if (now >= nextFlushAt) {
-        nextFlushAt = now + CHUNK_MS;
-        // Build a tiny WAV file for this slice
-        const wavBlob = makeWavBlobFromFrames(wavBuffer, wavSampleRate);
-        wavBuffer = [];
-        wavBlob.arrayBuffer().then(ab => {
-          const b64 = b64FromUint8(new Uint8Array(ab));
-          if (ws && ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify({ type: 'audio', data_b64: b64 }));
-          }
-        });
-      }
-    };
-
-    micSource.connect(processor);
-    processor.connect(audioCtx.destination);
-    log('recording with WAV fallback…');
-  }
+  micSource.connect(processor);
+  processor.connect(audioCtx.destination);
+  log('recording WAV chunks…');
 }
 
 function stop(){
-  try { if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop(); } catch{}
-  try { if (processor) processor.disconnect(); } catch{}
-  try { if (micSource) micSource.disconnect(); } catch{}
-  try { if (audioCtx) audioCtx.close(); } catch{}
-  try { if (mediaStream) mediaStream.getTracks().forEach(t => t.stop()); } catch{}
-  try { if (ws && ws.readyState === WebSocket.OPEN) ws.close(1000, 'done'); } catch{}
+  try { processor && processor.disconnect(); } catch{}
+  try { micSource && micSource.disconnect(); } catch{}
+  try { audioCtx && audioCtx.close(); } catch{}
+  try { mediaStream && mediaStream.getTracks().forEach(t => t.stop()); } catch{}
+  try { ws && ws.readyState === WebSocket.OPEN && ws.close(1000, 'done'); } catch{}
   btnStart.disabled = false; btnStop.disabled = true;
   log('stopped.');
 }
 
 btnStart.addEventListener('click', start);
 btnStop.addEventListener('click', stop);
-btnDismiss.addEventListener('click', hideOverlay);
+btnDismiss.addEventListener('click', () => overlay.style.display = 'none');
 </script>
 </body>
 </html>
