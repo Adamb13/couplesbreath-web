@@ -336,7 +336,7 @@
     function setServer(s){ vServer.textContent = s; }
     function setMode(m){ pillMode.textContent = 'mode: ' + m; }
 
-    function showOverlay(seconds=60){
+    function showOverlay(seconds=20){
       overlay.classList.add('show');
       let remain = seconds;
       overlayTmr.textContent = remain + 's';
