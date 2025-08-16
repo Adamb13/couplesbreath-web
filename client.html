@@ -1,270 +1,416 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Couples Breath</title>
+  <meta charset="utf-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+  />
+  <title>Couples Breathe</title>
   <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin:0; padding:24px; background:#0b1220; color:#e7eefc; }
-    h1 { margin:0 0 8px 0; font-size:22px; }
-    .card { background:#121a2b; border:1px solid #253552; border-radius:16px; padding:16px; max-width:720px; }
-    .row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
-    button { background:#2b66f6; color:white; border:none; border-radius:12px; padding:10px 16px; font-size:16px; }
-    button.secondary { background:#1c2740; }
-    .pill { background:#18243a; border:1px solid #2a3b5d; padding:6px 10px; border-radius:999px; font-size:13px; }
-    .big { font-size:40px; font-weight:700; margin:6px 0 0 0; line-height:1.1; }
-    .muted { color:#a8b3c9; font-size:13px; }
-    .debug { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size:12px; white-space:pre-wrap; background:#0d1526; border:1px dashed #334d7a; border-radius:12px; padding:10px; margin-top:10px; max-height:180px; overflow:auto; }
+    :root{
+      --bg: #0b0b0d;
+      --fg: #eaeaf0;
+      --muted: #a9adba;
+      --accent: #3ad0ff;
+      --ok: #23c55e;
+      --danger: #ef4444;
+      --danger-deep: #c1121f;   /* stop-sign red for overlay */
+      --btn-dark: #1b1e25;
+      --btn-stop: #8b2c2c;      /* solid background for STOP (not transparent) */
+      --btn-text: #ffffff;
+    }
+    html, body {
+      height: 100%;
+      margin: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    .wrap {
+      min-height: 100%;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+    .card {
+      width: min(780px, 92vw);
+      background: #111318;
+      border: 1px solid #1f242e;
+      border-radius: 16px;
+      padding: 18px 18px 22px;
+      box-shadow: 0 10px 24px rgba(0,0,0,.35);
+      position: relative;
+      overflow: hidden;
+    }
+    .row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .row.space {
+      justify-content: space-between;
+    }
+    h1 {
+      margin: 0;
+      font-size: 18px;
+      letter-spacing: .2px;
+      color: var(--fg);
+    }
+    .muted {
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .status {
+      display: flex;
+      gap: 12px;
+      align-items: baseline;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #141821;
+      border: 1px solid #1f2734;
+      color: #cbd5e1;
+    }
+    .dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: #93c5fd;
+    }
+    .ok { background: var(--ok); }
+    .danger { background: var(--danger); }
+
+    /* buttons */
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .btn {
+      width: 100%;
+      border: 0;
+      color: var(--btn-text);
+      font-weight: 600;
+      letter-spacing: .25px;
+      padding: 14px 16px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: transform .08s ease, box-shadow .2s ease, opacity .2s ease;
+      box-shadow: 0 8px 18px rgba(0,0,0,.25);
+    }
+    .btn:active { transform: translateY(1px) scale(0.995); }
+    .btn[disabled] { opacity: .5; cursor: not-allowed; }
+
+    .btn-start {
+      background: linear-gradient(180deg, #0ea5e9, #0284c7);
+      animation: pulse 1.4s ease-in-out infinite;
+    }
+    .btn-stop {
+      background: var(--btn-stop);    /* solid (non-transparent) */
+      animation: pulse 1.4s ease-in-out infinite; /* flash same as start */
+    }
+    .btn-test {
+      background: var(--btn-dark);
+      color: var(--fg);
+    }
+    @keyframes pulse {
+      0%,100% { box-shadow: 0 0 0 0 rgba(255,255,255,.18); }
+      50%     { box-shadow: 0 0 0 8px rgba(255,255,255,.05); }
+    }
+
+    /* red “stop sign” overlay */
     .overlay {
-      position: fixed; inset:0; display:none; place-items:center; backdrop-filter: blur(2px);
-      background: rgba(11,18,32,0.65); z-index: 9999;
+      position: absolute;
+      inset: 0;
+      display: none;
+      place-items: center;
+      padding: 18px;
+      background: rgba(193,18,31,0.94); /* stop-sign red */
+      color: #fff;
+      z-index: 10;
+      text-align: center;
     }
-    .overlay.show { display:grid; }
-    .overlay .panel {
-      background: #ffd9d9; color:#7a0e0e; border-radius:20px; padding:22px 20px; width:min(92vw,520px);
-      text-align:center; box-shadow: 0 12px 28px rgba(0,0,0,0.35);
+    .overlay.show { display: grid; }
+    .overlay-inner {
+      max-width: 520px;
     }
-    .overlay .title { font-size:28px; font-weight:800; margin:0 0 8px 0; }
-    .overlay .body { font-size:16px; color:#5a0c0c; }
+    .overlay h2 {
+      margin: 0 0 8px;
+      font-size: 28px;
+      line-height: 1.2;
+      text-transform: none;
+      letter-spacing: .2px;
+    }
+    .overlay p {
+      margin: 0 0 16px;
+      font-size: 16px;
+      opacity: .95;
+    }
+    .countdown {
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+      letter-spacing: .5px;
+      background: rgba(255,255,255,.18);
+      padding: 6px 10px;
+      border-radius: 10px;
+      display: inline-block;
+      margin-bottom: 12px;
+    }
+    .btn-dismiss {
+      border: 0;
+      background: #111317;
+      color: #fff;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 6px 16px rgba(0,0,0,.25);
+    }
+
+    /* mini log */
+    .log {
+      margin-top: 14px;
+      padding: 10px 12px;
+      background: #0f131a;
+      border: 1px solid #1b2330;
+      border-radius: 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      font-size: 12px;
+      color: #cbd5e1;
+      max-height: 32vh;
+      overflow: auto;
+      white-space: pre-wrap;
+    }
   </style>
 </head>
 <body>
-  <div class="card">
-    <div class="row" style="justify-content:space-between;">
-      <h1>Couples Breath</h1>
-      <div class="pill">status: <span id="status">idle</span></div>
+  <div class="wrap">
+    <div class="card" id="card">
+
+      <!-- red stop-sign overlay -->
+      <div class="overlay" id="overlay">
+        <div class="overlay-inner">
+          <div class="countdown" id="countdown">60s</div>
+          <h2>Pause and Breathe</h2>
+          <p>Slow, even breaths in and out through your nose. Let your shoulders drop. You’re okay.</p>
+          <button class="btn-dismiss" id="dismissBtn">Dismiss</button>
+        </div>
+      </div>
+
+      <div class="row space">
+        <div>
+          <h1>Couples Breathe</h1>
+          <div class="status" id="status">
+            <span class="pill"><span class="dot" id="dot-mode"></span> <span id="mode">mode: —</span></span>
+            <span class="pill"><span class="dot ok" id="dot-status"></span> <span id="state">status: idle</span></span>
+          </div>
+        </div>
+        <div class="muted" id="note"></div>
+      </div>
+
+      <div class="controls">
+        <button class="btn btn-start" id="startBtn">Start</button>
+        <button class="btn btn-stop"  id="stopBtn"  disabled>Stop</button>
+      </div>
+
+      <div class="controls" style="margin-top:8px">
+        <button class="btn btn-test" id="testTrigger">Test “Pause and Breathe”</button>
+      </div>
+
+      <div class="log" id="log"></div>
     </div>
-
-    <div class="big">hyper: <span id="hyper">-</span></div>
-    <div class="muted" id="mode">mode: -</div>
-
-    <div class="row" style="margin-top:14px;">
-      <button id="startBtn">Start session</button>
-      <button id="stopBtn" class="secondary" disabled>Stop</button>
-    </div>
-
-    <div class="debug" id="log"></div>
   </div>
 
-  <!-- PAUSE overlay -->
-  <div class="overlay" id="pauseOverlay">
-    <div class="panel">
-      <div class="title">PAUSE and breathe</div>
-      <div class="body">Both of you: inhale 4 · hold 4 · exhale 6. Try 3 rounds.</div>
-    </div>
-  </div>
+  <script>
+    // ===== config =====
+    // If you're hosting frontend separately, set this to your Render proxy URL.
+    // Example: const PROXY = 'wss://pause-proxy.onrender.com/client';
+    const PROXY = (location.protocol.replace('http','ws') + '//' + location.host + '/client');
 
-<script>
-(() => {
-  const statusEl = document.getElementById('status');
-  const hyperEl  = document.getElementById('hyper');
-  const logEl    = document.getElementById('log');
-  const modeEl   = document.getElementById('mode');
-  const overlay  = document.getElementById('pauseOverlay');
-  const startBtn = document.getElementById('startBtn');
-  const stopBtn  = document.getElementById('stopBtn');
+    // ===== el helpers =====
+    const $ = (id) => document.getElementById(id);
+    const elLog = $('log');
+    function log(...args){ const line = args.map(a => typeof a === 'string' ? a : JSON.stringify(a)).join(' '); elLog.textContent += line + '\n'; elLog.scrollTop = elLog.scrollHeight; }
 
-  // Always use WSS when page is HTTPS
-  const wsScheme = (location.protocol === 'https:') ? 'wss' : 'ws';
-  const PROXY_WS = `${wsScheme}://pause-proxy.onrender.com/client`;
+    const elMode = $('mode');
+    const elState = $('state');
+    const dotMode = $('dot-mode');
+    const dotStatus = $('dot-status');
+    const overlay = $('overlay');
+    const countdown = $('countdown');
+    const dismissBtn = $('dismissBtn');
+    const startBtn = $('startBtn');
+    const stopBtn  = $('stopBtn');
+    const testBtn  = $('testTrigger');
 
-  let ws, ctx, micStream, source, processor;
-  let running = false;
-  let speakReady = false;
+    // ===== audio capture → base64 PCM WAV chunks (MediaRecorder Opus also works with your current proxy) =====
+    let ws, mediaStream, recorder, sendTimer;
+    let pausedUntil = 0;
+    let countdownTimer = null;
 
-  function log(s) {
-    const t = new Date().toLocaleTimeString();
-    logEl.textContent = `[${t}] ${s}\n` + logEl.textContent;
-  }
+    function setMode(text){ elMode.textContent = 'mode: ' + text; }
+    function setState(text){ elState.textContent = 'status: ' + text; }
 
-  // Simple TTS with safety guard
-  function say(text) {
-    try {
-      const u = new SpeechSynthesisUtterance(text);
-      u.rate = 0.95; u.pitch = 1.0;
-      speechSynthesis.cancel();
-      speechSynthesis.speak(u);
-    } catch {}
-  }
+    function showOverlay(seconds=60){
+      // ensure 60s from any trigger
+      const now = Date.now();
+      const until = now + seconds*1000;
+      pausedUntil = Math.max(pausedUntil, until);
 
-  // Downsample Float32 PCM to 16k, return Int16Array
-  function downsampleTo16k(float32, fromSampleRate) {
-    const toRate = 16000;
-    if (fromSampleRate === toRate) {
-      // convert to int16 directly
-      const out = new Int16Array(float32.length);
-      for (let i=0;i<float32.length;i++){
-        let s = Math.max(-1, Math.min(1, float32[i]));
-        out[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
-      }
-      return out;
+      overlay.classList.add('show');
+      tickCountdown();
+      if (countdownTimer) clearInterval(countdownTimer);
+      countdownTimer = setInterval(tickCountdown, 250);
     }
-    const ratio = fromSampleRate / toRate;
-    const newLen = Math.round(float32.length / ratio);
-    const out = new Int16Array(newLen);
-    let o = 0;
-    let i = 0;
-    while (o < newLen) {
-      const nextI = Math.min(float32.length, Math.round((o+1)*ratio));
-      // simple average (box) resample
-      let sum = 0, count = 0;
-      while (i < nextI) { sum += float32[i++]; count++; }
-      const avg = count ? (sum / count) : 0;
-      const s = Math.max(-1, Math.min(1, avg));
-      out[o++] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+
+    function hideOverlay(){
+      overlay.classList.remove('show');
+      pausedUntil = 0;
+      if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
     }
-    return out;
-  }
 
-  // Build a WAV buffer (16-bit PCM, mono, 16kHz)
-  function int16ToWav(int16, sampleRate = 16000) {
-    const numFrames = int16.length;
-    const bytesPerSample = 2;
-    const blockAlign = 1 * bytesPerSample;
-    const byteRate = sampleRate * blockAlign;
+    function tickCountdown(){
+      const remain = Math.max(0, pausedUntil - Date.now());
+      const sec = Math.ceil(remain/1000);
+      countdown.textContent = sec + 's';
+      if (remain <= 0) hideOverlay();
+    }
 
-    const headerSize = 44;
-    const dataSize = numFrames * bytesPerSample;
-    const buf = new ArrayBuffer(headerSize + dataSize);
-    const view = new DataView(buf);
+    dismissBtn.addEventListener('click', hideOverlay);
 
-    // "RIFF"
-    writeStr(view, 0, 'RIFF');
-    view.setUint32(4, 36 + dataSize, true);
-    writeStr(view, 8, 'WAVE');
-
-    // fmt  chunk
-    writeStr(view, 12, 'fmt ');
-    view.setUint32(16, 16, true);            // PCM chunk size
-    view.setUint16(20, 1, true);             // audio format = PCM
-    view.setUint16(22, 1, true);             // channels = 1
-    view.setUint32(24, sampleRate, true);    // sample rate
-    view.setUint32(28, byteRate, true);      // byte rate
-    view.setUint16(32, blockAlign, true);    // block align
-    view.setUint16(34, 16, true);            // bits per sample
-
-    // data chunk
-    writeStr(view, 36, 'data');
-    view.setUint32(40, dataSize, true);
-
-    // PCM samples
-    let off = 44;
-    for (let i=0;i<numFrames;i++, off+=2) view.setInt16(off, int16[i], true);
-
-    return new Uint8Array(buf);
-  }
-
-  function writeStr(view, offset, str) {
-    for (let i=0;i<str.length;i++) view.setUint8(offset+i, str.charCodeAt(i));
-  }
-
-  function toBase64(uint8) {
-    let binary = '';
-    for (let i=0;i<uint8.length;i++) binary += String.fromCharCode(uint8[i]);
-    return btoa(binary);
-  }
-
-  function showOverlay() { overlay.classList.add('show'); }
-  function hideOverlay() { overlay.classList.remove('show'); }
-
-  function connectWS() {
-    ws = new WebSocket(PROXY_WS);
-    ws.onopen = () => { statusEl.textContent = 'connected'; log('ws open'); };
-    ws.onclose = (e) => { statusEl.textContent = 'closed'; log(`ws close ${e.code||''}`); stopCapture(); };
-    ws.onerror = (e) => { log('ws error'); };
-
-    ws.onmessage = (ev) => {
-      let msg; try { msg = JSON.parse(ev.data); } catch { return; }
-      if (msg.type === 'hello') {
-        modeEl.textContent = `mode: ${msg.mode}`;
-      } else if (msg.type === 'risk') {
-        hyperEl.textContent = msg.hyper?.toFixed ? msg.hyper.toFixed(2) : String(msg.hyper);
-      } else if (msg.type === 'trigger' && msg.kind === 'hyper') {
-        showOverlay();
-        if (speakReady) say('Pause and breathe. Inhale 4, hold 4, exhale 6. Try three rounds.');
-        setTimeout(hideOverlay, 9000);
-      } else if (msg.type === 'hume' && msg.status) {
-        statusEl.textContent = msg.status;
+    // ===== start / stop capture =====
+    async function start(){
+      if (ws && ws.readyState === WebSocket.OPEN){ /* already */ } else {
+        await openWS();
       }
-    };
-  }
+      await startAudio();
+      startBtn.disabled = true;
+      stopBtn.disabled = false;
+      setState('listening');
+    }
 
-  async function startCapture() {
-    if (running) return;
-    running = true; speakReady = true;
-    log('requesting mic…');
-    const stream = await navigator.mediaDevices.getUserMedia({
-      audio: {
-        echoCancellation: true,
-        noiseSuppression: true,
-        autoGainControl: true
-      }
+    function stop(){
+      try { if (recorder && recorder.state !== 'inactive') recorder.stop(); } catch{}
+      try { if (mediaStream) mediaStream.getTracks().forEach(t=>t.stop()); } catch{}
+      try { if (ws) ws.close(); } catch{}
+      clearInterval(sendTimer);
+      recorder = null; mediaStream = null; ws = null;
+      startBtn.disabled = false;
+      stopBtn.disabled = true;
+      setState('idle');
+    }
+
+    startBtn.addEventListener('click', start);
+    stopBtn.addEventListener('click', stop);
+
+    // Demo button to simulate a trigger (for UI check)
+    testBtn.addEventListener('click', () => {
+      showOverlay(60);
+      log('[demo] simulated trigger → Pause and Breathe (60s)');
     });
-    micStream = stream;
-    ctx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'interactive' });
-    source = ctx.createMediaStreamSource(stream);
 
-    // Use ScriptProcessor to build ~1s chunks we’ll downsample to 16k and wrap as WAV
-    const BUFFER_MS = 1000;
-    const framesPerBuffer = Math.round(ctx.sampleRate * BUFFER_MS / 1000);
-    processor = ctx.createScriptProcessor( Math.min(16384, Math.pow(2, Math.ceil(Math.log2(framesPerBuffer)))) , 1, 1);
+    // ===== WS handling =====
+    async function openWS(){
+      return new Promise((resolve, reject) => {
+        ws = new WebSocket(PROXY);
+        ws.onopen = () => {
+          setMode('hume');
+          dotMode.classList.add('ok');
+          log('[ws] open →', PROXY);
+          resolve();
+        };
+        ws.onmessage = (ev) => {
+          let msg; try { msg = JSON.parse(ev.data); } catch { return; }
 
-    let floatBuffer = new Float32Array(0);
+          if (msg.type === 'hello'){
+            setMode(msg.mode || '—');
+          }
+          else if (msg.type === 'hume'){
+            if (msg.status === 'connected') {
+              dotStatus.classList.add('ok');
+              setState('connected');
+            } else if (msg.status === 'closed') {
+              setState('closed');
+            } else if (msg.status === 'error') {
+              setState('error');
+              log('[hume] error:', msg.message || '');
+            }
+          }
+          else if (msg.type === 'risk'){
+            // (we no longer display a hyper value in header; keep log minimal)
+          }
+          else if (msg.type === 'trigger' && msg.kind === 'hyper'){
+            log('[trigger] hyper:', Number(msg.score || 0).toFixed(2));
+            showOverlay(60); // always 60s
+          }
+        };
+        ws.onerror = (e) => { log('[ws] error'); };
+        ws.onclose = () => {
+          dotStatus.classList.remove('ok');
+          setState('idle');
+          log('[ws] closed');
+        };
+      });
+    }
 
-    processor.onaudioprocess = (e) => {
-      if (!running) return;
-      const input = e.inputBuffer.getChannelData(0);
-      // append
-      const tmp = new Float32Array(floatBuffer.length + input.length);
-      tmp.set(floatBuffer, 0); tmp.set(input, floatBuffer.length);
-      floatBuffer = tmp;
-
-      // when we have ~1s of audio, encode & send
-      if (floatBuffer.length >= framesPerBuffer) {
-        const int16 = downsampleTo16k(floatBuffer, ctx.sampleRate); // Int16Array mono 16k
-        const wav = int16ToWav(int16, 16000);                       // Uint8Array WAV
-        const b64 = toBase64(wav);
-        if (ws && ws.readyState === 1) {
-          ws.send(JSON.stringify({ type: 'audio', data_b64: b64 }));
-          log(`sent wav ${wav.length} bytes`);
-        }
-        floatBuffer = new Float32Array(0);
+    async function startAudio(){
+      if (!navigator.mediaDevices?.getUserMedia){
+        log('microphone unavailable'); return;
       }
-    };
+      mediaStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true }, video: false });
 
-    source.connect(processor);
-    processor.connect(ctx.destination); // required on iOS to keep processor running
+      // Use MediaRecorder; server already accepts base64 chunks
+      const mr = new MediaRecorder(mediaStream, { mimeType: 'audio/webm' });
+      const chunks = [];
+      mr.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
+      mr.onstop = async () => {
+        if (!chunks.length) return;
+        const blob = new Blob(chunks, { type: 'audio/webm' });
+        chunks.length = 0;
+        const b64 = await blobToBase64(blob);
+        if (ws && ws.readyState === WebSocket.OPEN){
+          ws.send(JSON.stringify({ type: 'audio', data_b64: b64.split(',')[1] || '' }));
+          log('[client] sent wav bytes ≈', (b64.length|0));
+        }
+      };
 
-    statusEl.textContent = 'recording…';
-  }
+      // record in small slices for low latency
+      mr.start(1000); // timeslice ms
+      recorder = mr;
 
-  function stopCapture() {
-    running = false;
-    try { processor && processor.disconnect(); } catch {}
-    try { source && source.disconnect(); } catch {}
-    try { micStream && micStream.getTracks().forEach(t => t.stop()); } catch {}
-    try { ctx && ctx.close(); } catch {}
-    processor = null; source = null; micStream = null; ctx = null;
-  }
+      // safety flush every ~1s even if stop/start events lag
+      sendTimer = setInterval(() => {
+        if (!recorder || recorder.state !== 'recording') return;
+        recorder.requestData();
+      }, 1100);
 
-  startBtn.onclick = async () => {
-    startBtn.disabled = true; stopBtn.disabled = false;
-    hideOverlay();
-    if (!ws || ws.readyState > 1) connectWS();
-    // give WS a tick to open
-    setTimeout(() => startCapture().catch(err => { log('mic error: '+err.message); }), 200);
-  };
-  stopBtn.onclick = () => {
-    stopBtn.disabled = true; startBtn.disabled = false;
-    stopCapture();
-    try { ws && ws.close(); } catch {}
-  };
+      setState('listening');
+    }
 
-  // iOS: start audio context on first touch
-  document.body.addEventListener('touchstart', () => {
-    if (ctx && ctx.state === 'suspended') ctx.resume();
-  }, {passive:true});
-})();
-</script>
+    function blobToBase64(blob){
+      return new Promise((resolve) => {
+        const r = new FileReader();
+        r.onloadend = () => resolve(r.result);
+        r.readAsDataURL(blob);
+      });
+    }
+
+    // boot
+    (function init(){
+      log('ready. tap Start to begin.');
+      setState('idle');
+      setMode('—');
+    })();
+  </script>
 </body>
 </html>
