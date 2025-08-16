@@ -1,247 +1,164 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Couples Breath – Monitor (WAV)</title>
-<style>
-  body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; margin: 0; background:#0b1220; color:#e8eefc; }
-  .wrap { max-width: 720px; margin: 24px auto; padding: 16px; }
-  .card { background: #141c2f; border-radius: 16px; padding: 20px; box-shadow: 0 8px 24px rgba(0,0,0,.25); position:relative; }
-  .row { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
-  button { padding: 12px 16px; border-radius: 10px; border: 0; font-weight: 600; cursor: pointer; }
-  .start { background:#4ade80; color:#06210e; }
-  .stop { background:#ef4444; color:#fff; }
-  .pill { padding:6px 10px; border-radius:999px; font-weight:600; font-size: 13px; }
-  .ok { background:#11331c; color:#7ef7a5; border:1px solid #1f6f3a; }
-  .live { background:#3b0f16; color:#ff98a6; border:1px solid #a21d2b; }
-  .paused { background:#1b2b0d; color:#c5f56b; border:1px solid #6aa412; }
-  .log { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: pre-wrap; background:#0d1424; border-radius:12px; padding:12px; height: 160px; overflow:auto; margin-top: 12px; }
-  .overlay {
-    position: fixed; inset: 0; display:none; align-items:center; justify-content:center;
-    background: rgba(8, 14, 28, .86); z-index: 9999;
-  }
-  .overlay .panel {
-    background: #10192c; border: 2px solid #4ade80; color:#eafff0;
-    border-radius: 20px; padding: 24px; text-align:center; width:min(90vw,520px);
-    box-shadow: 0 12px 36px rgba(0,0,0,.5);
-  }
-  .muted { opacity: .7; }
-  .topbar { position:absolute; right:16px; top:16px; display:flex; gap:8px; }
-</style>
+  <meta charset="utf-8">
+  <title>Couples Breath</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+    header { padding: 16px; text-align: center; font-weight: 600; }
+    main { max-width: 720px; margin: 0 auto; padding: 16px; }
+    .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+    button { padding: 10px 16px; border-radius: 8px; border: 0; font-size: 16px; cursor: pointer; }
+    #status { font-size: 14px; opacity: 0.7; }
+    #meter { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    #overlay {
+      display: none; position: fixed; inset: 0; z-index: 99999;
+      background: rgba(0,0,0,0.65); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      text-align: center; padding: 24px;
+    }
+    #card { max-width: 520px; background: rgba(255,255,255,0.08); padding: 24px; border-radius: 16px; }
+    #resumeBtn { background: #fff; color: #111; }
+  </style>
 </head>
 <body>
-<div class="wrap">
-  <div class="card">
-    <div class="topbar">
-      <span id="statusPill" class="pill ok">🟢 Ready</span>
-      <span id="pausePill" class="pill paused" style="display:none;">⏸ PAUSED — take 3 slow breaths</span>
+  <header>Couples Breath</header>
+  <main>
+    <div class="row" style="justify-content:center; margin-bottom:12px;">
+      <button id="startBtn" style="background:#2563eb; color:#fff;">Start discussion</button>
+      <button id="stopBtn"  style="background:#ef4444; color:#fff;" disabled>Stop</button>
     </div>
 
-    <h2>Couples Breath</h2>
-    <p class="muted">Tap Start, allow the mic, talk normally, then raise intensity for a few seconds.</p>
-
-    <div class="row" style="margin:8px 0 12px;">
-      <button id="btnStart" class="start">Start</button>
-      <button id="btnStop" class="stop" disabled>Stop</button>
+    <div class="row" style="justify-content:center; margin-bottom:8px;">
+      <div id="status">Idle</div>
     </div>
 
-    <div class="log" id="log"></div>
+    <div class="row" style="justify-content:center;">
+      <div id="meter">hyper: –</div>
+    </div>
+  </main>
+
+  <!-- Overlay -->
+  <div id="overlay">
+    <div id="card">
+      <h1 style="margin:0 0 12px 0; font-size:28px;">Let’s pause and breathe</h1>
+      <p id="overlayText" style="margin:0 0 16px 0; font-size:18px;">
+        It’s getting heated — take 3 slow breaths together.
+      </p>
+      <button id="resumeBtn">Resume</button>
+    </div>
   </div>
-</div>
 
-<div class="overlay" id="overlay">
-  <div class="panel">
-    <h3>Let’s pause and breathe</h3>
-    <p>Take 3 slow breaths together. In… out…</p>
-    <button id="btnDismiss" class="start">Resume</button>
-  </div>
-</div>
+  <script>
+    // === Adjust for your Render deployment ===
+    const WS_URL = 'wss://pause-proxy.onrender.com/client';
 
-<script>
-const WS_URL = 'wss://pause-proxy.onrender.com/client';
-const CHUNK_MS = 700; // well under ~5s/message limit
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn  = document.getElementById('stopBtn');
+    const statusEl = document.getElementById('status');
+    const meterEl  = document.getElementById('meter');
 
-const logEl = document.getElementById('log');
-const overlay = document.getElementById('overlay');
-const btnStart = document.getElementById('btnStart');
-const btnStop = document.getElementById('btnStop');
-const btnDismiss = document.getElementById('btnDismiss');
-const statusPill = document.getElementById('statusPill');
-const pausePill = document.getElementById('pausePill');
+    const overlayEl = document.getElementById('overlay');
+    const overlayTextEl = document.getElementById('overlayText');
+    const resumeBtn = document.getElementById('resumeBtn');
 
-let ws = null;
-let mediaStream = null;
-let audioCtx, processor, micSource;
-let wavBuffer = [];
-let wavSampleRate = 48000;
-let reconnectTimer = null;
-let running = false; // are we in an active session?
+    let ws;
+    let stream;
+    let recorder;
+    let chunks = [];
 
-function log(...args){ const line = args.map(a => typeof a === 'string' ? a : JSON.stringify(a)).join(' '); logEl.textContent += line + '\n'; logEl.scrollTop = logEl.scrollHeight; }
-
-function b64FromUint8(u8){ let bin=''; for (let i=0;i<u8.length;i++) bin += String.fromCharCode(u8[i]); return btoa(bin); }
-
-function speak(text){
-  try{
-    if (!window.speechSynthesis) return;
-    const ut = new SpeechSynthesisUtterance(text);
-    ut.rate = 0.9; ut.pitch = 1.0;
-    window.speechSynthesis.cancel(); window.speechSynthesis.speak(ut);
-  }catch{}
-}
-
-function setStatus(listening){
-  if (listening){
-    statusPill.className = 'pill live';
-    statusPill.textContent = '🔴 Listening';
-  } else {
-    statusPill.className = 'pill ok';
-    statusPill.textContent = '🟢 Ready';
-  }
-}
-
-function showPauseUI(show){
-  pausePill.style.display = show ? 'inline-block' : 'none';
-  overlay.style.display   = show ? 'flex'        : 'none';
-  if (show) speak("Let's pause and take three slow breaths together.");
-}
-
-function floatTo16BitPCM(float32Array){
-  const out = new Int16Array(float32Array.length);
-  for (let i = 0; i < float32Array.length; i++){
-    let s = Math.max(-1, Math.min(1, float32Array[i]));
-    out[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
-  }
-  return out;
-}
-
-function makeWavBlobFromFrames(frames, sampleRate){
-  let totalSamples = 0;
-  for (const f of frames) totalSamples += f.length;
-  const pcm = new Int16Array(totalSamples);
-  let offset = 0;
-  for (const f of frames){ pcm.set(f, offset); offset += f.length; }
-
-  const blockAlign = 2; // 16-bit mono
-  const byteRate = sampleRate * blockAlign;
-  const dataSize = pcm.length * 2;
-  const buffer = new ArrayBuffer(44 + dataSize);
-  const view = new DataView(buffer);
-
-  writeStr(view, 0, 'RIFF');
-  view.setUint32(4, 36 + dataSize, true);
-  writeStr(view, 8, 'WAVE');
-  writeStr(view, 12, 'fmt ');
-  view.setUint32(16, 16, true);
-  view.setUint16(20, 1, true);
-  view.setUint16(22, 1, true);
-  view.setUint32(24, sampleRate, true);
-  view.setUint32(28, byteRate, true);
-  view.setUint16(32, blockAlign, true);
-  view.setUint16(34, 16, true);
-  writeStr(view, 36, 'data');
-  view.setUint32(40, dataSize, true);
-
-  const out = new Uint8Array(buffer);
-  out.set(new Uint8Array(pcm.buffer), 44);
-  return new Blob([out], { type: 'audio/wav' });
-
-  function writeStr(dv, offset, s){ for (let i=0;i<s.length;i++){ dv.setUint8(offset+i, s.charCodeAt(i)); } }
-}
-
-async function start(){
-  if (running) return;
-  running = true;
-  setStatus(true);
-  btnStart.disabled = true; btnStop.disabled = false;
-  log('starting…');
-
-  ws = new WebSocket(WS_URL);
-
-  ws.onopen = () => log('[web] ws open');
-
-  ws.onclose = (e) => {
-    log('[web] ws close', e.code, e.reason || '');
-    if (running) {
-      clearTimeout(reconnectTimer);
-      reconnectTimer = setTimeout(() => {
-        log('[web] reconnecting…');
-        start();
-      }, 1500);
+    function logStatus(t) {
+      statusEl.textContent = t;
+      console.log('[client]', t);
     }
-  };
 
-  ws.onerror = (e) => log('[web] ws error', e.message || '');
+    function connectWS() {
+      ws = new WebSocket(WS_URL);
+      ws.onopen = () => logStatus('Connected to proxy');
+      ws.onclose = () => logStatus('Disconnected');
+      ws.onerror = (e) => console.log('[client] ws error', e);
+      ws.onmessage = (ev) => {
+        let msg;
+        try { msg = JSON.parse(ev.data); } catch { return; }
+        // console.log('[client] msg', msg);
 
-  ws.onmessage = (ev) => {
-    try{
-      const msg = JSON.parse(ev.data);
-      if (msg.type === 'trigger') {
-        log('[trigger]', JSON.stringify(msg));
-        showPauseUI(true);
-      } else if (msg.type === 'hume') {
-        log('[hume]', msg.status);
+        if (msg.type === 'risk' && typeof msg.hyper === 'number') {
+          meterEl.textContent = `hyper: ${msg.hyper.toFixed(2)}`;
+        }
+
+        if (msg.type === 'trigger') {
+          overlayTextEl.textContent = "It’s getting heated — take 3 slow breaths together.";
+          overlayEl.style.display = 'flex';
+          // Optional: add a short chime with WebAudio API
+        }
+      };
+    }
+
+    async function start() {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      } catch (e) {
+        alert('Microphone permission is required.');
+        return;
       }
-      // optional: if you want to display rolling risk in UI, handle msg.type === 'risk'
-    }catch{}
-  };
 
-  try {
-    mediaStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
-  } catch (err) {
-    log('mic error:', err.message || err);
-    stop(); // clean up state
-    return;
-  }
+      connectWS();
 
-  // WAV-only capture (self-contained per chunk)
-  audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 48000 });
-  wavSampleRate = audioCtx.sampleRate;
-  micSource = audioCtx.createMediaStreamSource(mediaStream);
-  processor = audioCtx.createScriptProcessor(4096, 1, 1);
-  let nextFlushAt = performance.now() + CHUNK_MS;
+      // Use MediaRecorder to get proper media chunks (webm/opus)
+      const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ? 'audio/webm;codecs=opus'
+        : (MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : '');
 
-  processor.onaudioprocess = (e) => {
-    const input = e.inputBuffer.getChannelData(0);
-    wavBuffer.push(floatTo16BitPCM(input));
+      if (!mime) {
+        alert('This browser does not support MediaRecorder WebM audio.');
+        return;
+      }
 
-    const now = performance.now();
-    if (now >= nextFlushAt) {
-      nextFlushAt = now + CHUNK_MS;
-      const wavBlob = makeWavBlobFromFrames(wavBuffer, wavSampleRate);
-      wavBuffer = [];
-      wavBlob.arrayBuffer().then(ab => {
-        const b64 = b64FromUint8(new Uint8Array(ab));
+      recorder = new MediaRecorder(stream, { mimeType: mime, audioBitsPerSecond: 64000 });
+      chunks = [];
+
+      recorder.ondataavailable = async (e) => {
+        if (!e.data || e.data.size === 0) return;
+        // Send each chunk immediately as base64
+        const buf = await e.data.arrayBuffer();
+        const b64 = arrayBufferToBase64(buf);
         if (ws && ws.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify({ type: 'audio', data_b64: b64 }));
         }
-      });
+      };
+
+      recorder.onstart = () => logStatus('Recording…');
+      recorder.onstop  = () => logStatus('Stopped');
+
+      recorder.start(1000); // 1 second chunks
+      startBtn.disabled = true;
+      stopBtn.disabled  = false;
     }
-  };
 
-  micSource.connect(processor);
-  processor.connect(audioCtx.destination);
-  log('recording WAV chunks…');
-}
+    function stop() {
+      try { recorder && recorder.state !== 'inactive' && recorder.stop(); } catch {}
+      try { stream && stream.getTracks().forEach(t => t.stop()); } catch {}
+      try { ws && ws.readyState === WebSocket.OPEN && ws.close(); } catch {}
+      startBtn.disabled = false;
+      stopBtn.disabled  = true;
+    }
 
-function stop(){
-  running = false;
-  clearTimeout(reconnectTimer);
-  try { processor && processor.disconnect(); } catch{}
-  try { micSource && micSource.disconnect(); } catch{}
-  try { audioCtx && audioCtx.close(); } catch{}
-  try { mediaStream && mediaStream.getTracks().forEach(t => t.stop()); } catch{}
-  try { ws && ws.readyState === WebSocket.OPEN && ws.close(1000, 'done'); } catch{}
-  setStatus(false);
-  btnStart.disabled = false; btnStop.disabled = true;
-  showPauseUI(false);
-  log('stopped.');
-}
+    resumeBtn.addEventListener('click', () => {
+      overlayEl.style.display = 'none';
+    });
 
-btnStart.addEventListener('click', start);
-btnStop.addEventListener('click', stop);
-btnDismiss.addEventListener('click', () => showPauseUI(false));
-</script>
+    startBtn.addEventListener('click', start);
+    stopBtn .addEventListener('click', stop);
+
+    function arrayBufferToBase64(buffer) {
+      // Convert ArrayBuffer → base64
+      let binary = '';
+      const bytes = new Uint8Array(buffer);
+      const len = bytes.byteLength;
+      for (let i = 0; i < len; i++) binary += String.fromCharCode(bytes[i]);
+      return btoa(binary);
+    }
+  </script>
 </body>
 </html>
