@@ -185,17 +185,19 @@
 /* Inner “card” */
 .toast-card{
   display: flex;
+  flex-direction: column;    /* stack text + button vertically */
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  justify-content: center;
+  gap: 18px;                 /* more breathing room between text and button */
   width: min(92vw, 520px);
+  min-height: 40vh;          /* takes up ~40% of phone height */
   background: #1b1b1f;
   border: 1px solid var(--border);
   color: var(--text);
-  padding: 16px 18px;
-  border-radius: 16px;
+  padding: 40px 24px;        /* bigger vertical padding */
+  border-radius: 20px;
   box-shadow: 0 20px 60px rgba(0,0,0,0.55);
-  text-align: left;
+  text-align: center;        /* center the text */
 }
 
 /* Text + button */
