@@ -15,7 +15,6 @@
       --muted: #9aa0a6;
       --accent: #2563eb; /* Start (blue) */
       --danger: #ef4444; /* Stop (red) */
-      --good: #22c55e;
       --border: #2a2a2e;
     }
     *{ box-sizing: border-box; }
@@ -31,7 +30,7 @@
       min-height: 100%;
       display: grid;
       grid-template-rows: auto 1fr auto;
-      padding: 16px;                 /* <- right padding fixed */
+      padding: 16px;
       padding-bottom: max(16px, env(safe-area-inset-bottom));
       gap: 16px;
     }
@@ -42,6 +41,9 @@
       align-items: center;
       justify-content: space-between;
       gap: 12px;
+      max-width: 720px;
+      width: 100%;
+      margin: 0 auto;
     }
     .brand{
       font-weight: 700;
@@ -51,6 +53,7 @@
       display: flex;
       gap: 8px;
       flex-wrap: wrap;
+      justify-content: flex-end;
     }
     .pill{
       display: inline-flex;
@@ -111,12 +114,11 @@
     button:active{ transform: scale(0.98); filter: brightness(0.96); }
     .btn-start{ background: var(--accent); border-color: #1e4fcc; }
     .btn-stop { background: var(--danger); border-color: #c73131; }
-    .btn-muted{ background:#1c1c21; color: var(--muted); }
 
     /* Notch-safe bottom spacing on iOS */
     .footer-spacer{ height: max(8px, env(safe-area-inset-bottom)); }
 
-    /* Overlay: dimmed backdrop + centered red “stop sign” panel (not full-screen red) */
+    /* Overlay: dimmed backdrop + centered red card (not full-screen red) */
     .overlay{
       position: fixed;
       inset: 0;
@@ -124,16 +126,16 @@
       align-items: center;
       justify-content: center;
       padding: 20px;
-      background: rgba(0,0,0,0.45);       /* backdrop stays dark, not red */
+      background: rgba(0,0,0,0.45);
       z-index: 50;
     }
     .overlay.show{ display: flex; }
 
     .overlay-card{
-      width: min(90vw, 520px);
+      width: min(92vw, 560px);
       background: #b91c1c;                /* stop-sign red */
       color: #fff;
-      border-radius: 20px;                 /* rounded card, simple and bold */
+      border-radius: 20px;
       box-shadow: 0 20px 60px rgba(0,0,0,0.55);
       padding: 28px 22px;
       text-align: center;
@@ -143,19 +145,21 @@
       font-size: clamp(22px, 4.5vw, 28px);
       font-weight: 900;
       letter-spacing: 0.3px;
-      margin: 0 0 6px;
+      margin: 0 0 8px;
     }
     .overlay-sub{
-      font-size: clamp(14px, 3.2vw, 16px);
-      opacity: 0.95;
+      font-size: clamp(14px, 3.4vw, 18px);
+      line-height: 1.35;
+      opacity: 0.98;
       margin: 0 0 14px;
+      font-weight: 600;
     }
     .overlay-timer{
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      min-width: 72px;
-      padding: 8px 12px;
+      min-width: 80px;
+      padding: 10px 14px;
       border-radius: 999px;
       background: rgba(255,255,255,0.15);
       border: 1px solid rgba(255,255,255,0.35);
@@ -163,7 +167,7 @@
       font-size: 18px;
     }
 
-    /* Success toast (you can enable later when your script triggers it) */
+    /* Success toast (stays until Restart is tapped; behavior handled in script) */
     .toast{
       position: fixed;
       left: 50%;
@@ -218,8 +222,8 @@
       </div>
 
       <div class="controls">
-        <button id="btnStart" class="btn-start">Start</button>
-        <button id="btnStop"  class="btn-stop">Stop</button>
+        <button id="btnStart" class="btn-start" type="button">Start</button>
+        <button id="btnStop"  class="btn-stop"  type="button">Stop</button>
       </div>
     </main>
 
@@ -230,17 +234,21 @@
   <div id="overlay" class="overlay" aria-hidden="true">
     <div class="overlay-card" role="dialog" aria-live="assertive" aria-label="Pause and Breathe">
       <h2 class="overlay-title">Pause and Breathe</h2>
-      <p class="overlay-sub">Co-regulate for a moment.</p>
+      <p class="overlay-sub">Deep Breath, Hold, Slow Exhale, Repeat</p>
       <div id="overlayTimer" class="overlay-timer">60s</div>
     </div>
   </div>
 
-  <!-- (Optional) SUCCESS TOAST — ready for later wiring -->
+  <!-- SUCCESS TOAST -->
   <div id="successToast" class="toast" aria-live="polite">
     <span class="msg">Great Work Slowing Down Together! ❤️</span>
     <button id="btnRestart" class="restart" type="button">Restart</button>
   </div>
 
+  <!-- PASTE YOUR EXISTING, WORKING <script>…</script> BLOCK RIGHT BELOW THIS LINE -->
+  <!-- (leave everything above exactly as-is) -->
+</body>
+</html>
   <!-- ⬇️ PASTE YOUR EXISTING, WORKING <script>…</script> BLOCK RIGHT HERE (unchanged) ⬇️ -->
 <script>
     // ---------- CONFIG ----------
