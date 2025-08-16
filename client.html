@@ -170,13 +170,23 @@
     /* Success toast (stays until Restart is tapped; behavior handled in script) */
   /* Success overlay — centered, with dim backdrop (on top of red overlay) */
 .toast{
+  .toast{
   position: fixed;
-  inset: 0;
-  display: none;                 /* toggled to flex by .show */
+  left: 50%;
+  bottom: calc(18px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  display: none;
+  gap: 10px;
   align-items: center;
-  justify-content: center;
-  background: rgba(0,0,0,0.45);  /* backdrop */
-  z-index: 60;                   /* above the red Pause overlay */
+  background: #1b1b1f;
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 12px 14px;
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.35);
+  z-index: 60;
+  max-width: 92vw;
+}
 }
 
 /* Show state */
@@ -259,12 +269,11 @@
     </div>
   </div>
 
-  <!-- SUCCESS TOAST -->
-  <div id="successToast" class="toast" aria-live="polite" aria-label="Success">
-  <div class="toast-card">
-    <div class="msg">Great Work Slowing Down Together! ❤️</div>
-    <button id="btnRestart" class="restart" type="button">Restart</button>
-  </div>
+ <!-- SUCCESS TOAST -->
+<div id="successToast" class="toast" aria-live="polite">
+  <span class="msg">Great Work Slowing Down Together! ❤️</span>
+  <button id="btnRestart" class="restart" type="button">Restart</button>
+</div>
 </div>
 
   <!-- PASTE YOUR EXISTING, WORKING <script>…</script> BLOCK RIGHT BELOW THIS LINE -->
@@ -340,7 +349,7 @@
     function setServer(s){ vServer.textContent = s; }
     function setMode(m){ pillMode.textContent = 'mode: ' + m; }
 
-    function showOverlay(seconds=20){
+    function showOverlay(seconds=60){
       overlay.classList.add('show');
       let remain = seconds;
       overlayTmr.textContent = remain + 's';
@@ -379,7 +388,7 @@
           // no on-screen hyper label anymore
         } else if (msg.type === 'trigger'){
           if (msg.kind === 'hyper') {
-            showOverlay(60); // 60s exactly
+            showOverlay(20); // 20s exactly
           }
         }
       };
