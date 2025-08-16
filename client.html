@@ -2,309 +2,246 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover"
+  />
   <title>Couples Breath</title>
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-
   <style>
     :root{
-      --bg:#0b0b0c; --fg:#f3f4f6; --muted:#9aa0ab; --ring:rgba(255,255,255,.08);
-      --start:#2563eb; --start-shadow:rgba(37,99,235,.35);
-      --stop:#ef4444;  --stop-shadow:rgba(239,68,68,.35);
-      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      --bg: #0b0b0c;
+      --panel: #141417;
+      --text: #eaeaea;
+      --muted: #9aa0a6;
+      --accent: #2563eb; /* Start (blue) */
+      --danger: #ef4444; /* Stop (red) */
+      --good: #22c55e;
+      --border: #2a2a2e;
     }
-    *{box-sizing:border-box}
-    html,body{margin:0;padding:0;background:var(--bg);color:var(--fg);-webkit-font-smoothing:antialiased}
-    body{font-family:-apple-system,BlinkMacSystemFont,Inter,Segoe UI,Roboto,Helvetica,Arial,sans-serif;overflow-x:hidden}
-
-    /* Layout = header (small) / hero-controls (fills) / footer (tiny status) */
-    main{
-      min-height:100dvh;
-      display:grid;
-      grid-template-rows:auto 1fr auto;
-      padding:
-        max(10px, env(safe-area-inset-top))
-        max(16px, env(safe-area-inset-right))
-        max(10px, env(safe-area-inset-bottom))
-        max(16px, env(safe-area-inset-left));
-      gap:8px;
+    *{ box-sizing: border-box; }
+    html, body{
+      height: 100%;
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 16px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, Apple Color Emoji, Segoe UI Emoji;
     }
 
-    header{
-      display:flex;align-items:center;justify-content:space-between;gap:10px;padding-right:8px;
+    .page{
+      min-height: 100%;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      padding: 16px;                 /* <- right padding fixed */
+      padding-bottom: max(16px, env(safe-area-inset-bottom));
+      gap: 16px;
     }
-    .brand{display:flex;align-items:baseline;gap:8px}
-    .brand h1{margin:0;font-size:20px;font-weight:800;letter-spacing:.2px;white-space:normal}
-    .subtle{color:var(--muted);font-size:12px}
 
+    /* Header: compact status row */
+    .header{
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .brand{
+      font-weight: 700;
+      letter-spacing: 0.2px;
+    }
+    .pills{
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
     .pill{
-      display:inline-flex;align-items:center;gap:6px;
-      background:#0f1117;border:1px solid var(--ring);border-radius:999px;
-      padding:6px 10px;font-size:12px;max-width:100%;white-space:nowrap
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: #1b1b1f;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 13px;
+      white-space: nowrap;
+    }
+    .pill strong{ color: var(--text); font-weight: 600; }
+
+    /* Main card */
+    .card{
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 18px;
+      display: grid;
+      gap: 16px;
+      align-content: start;
+      max-width: 720px;
+      width: 100%;
+      margin: 0 auto;
     }
 
-    /* HERO: centered Start/Stop */
-    .hero{
-      display:grid;place-items:center;
+    .hint{
+      color: var(--muted);
+      font-size: 14px;
     }
+
+    /* Controls row */
     .controls{
-      display:flex;gap:14px;flex-wrap:wrap;justify-content:center;
-      width:100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr; /* equal widths */
+      gap: 12px;
+      position: sticky;
+      bottom: 0;
+      background: linear-gradient(180deg, rgba(11,11,12,0), rgba(11,11,12,0.6));
+      padding-top: 6px;
     }
     button{
-      appearance:none;border:none;border-radius:12px;padding:14px 22px;
-      font-weight:800;color:#fff;min-width:160px;cursor:pointer;
-      transition:transform .04s ease, opacity .15s ease, box-shadow .15s ease;
-      will-change:transform;
+      appearance: none;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      font-weight: 700;
+      font-size: 16px;
+      color: white;
+      background: #1c1c21;
+      cursor: pointer;
+      transition: transform .06s ease, filter .06s ease, background .12s ease, border-color .12s ease;
+      touch-action: manipulation;
     }
-    button:active{transform:translateY(1px);opacity:.95}
-    #startBtn{background:var(--start);box-shadow:0 8px 22px var(--start-shadow)}
-    #stopBtn{background:var(--stop); box-shadow:0 8px 22px var(--stop-shadow)}
+    button:active{ transform: scale(0.98); filter: brightness(0.96); }
+    .btn-start{ background: var(--accent); border-color: #1e4fcc; }
+    .btn-stop { background: var(--danger); border-color: #c73131; }
+    .btn-muted{ background:#1c1c21; color: var(--muted); }
 
-    /* FOOTER: compact status/proxy row (no big card) */
-    footer{
-      border-top:1px solid var(--ring);
-      padding-top:8px;
-      display:grid;gap:6px;
+    /* Notch-safe bottom spacing on iOS */
+    .footer-spacer{ height: max(8px, env(safe-area-inset-bottom)); }
+
+    /* Overlay: dimmed backdrop + centered red “stop sign” panel (not full-screen red) */
+    .overlay{
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: rgba(0,0,0,0.45);       /* backdrop stays dark, not red */
+      z-index: 50;
     }
-    .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-    .label{color:var(--muted);font-size:12px}
-    .value{font-size:12px}
-    .url{
-      font-family:var(--mono);font-size:12px;color:#c7d2fe;
-      background:#0e1015;border:1px solid var(--ring);border-radius:8px;
-      padding:4px 8px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+    .overlay.show{ display: flex; }
+
+    .overlay-card{
+      width: min(90vw, 520px);
+      background: #b91c1c;                /* stop-sign red */
+      color: #fff;
+      border-radius: 20px;                 /* rounded card, simple and bold */
+      box-shadow: 0 20px 60px rgba(0,0,0,0.55);
+      padding: 28px 22px;
+      text-align: center;
+      border: 2px solid #7f1d1d;
+    }
+    .overlay-title{
+      font-size: clamp(22px, 4.5vw, 28px);
+      font-weight: 900;
+      letter-spacing: 0.3px;
+      margin: 0 0 6px;
+    }
+    .overlay-sub{
+      font-size: clamp(14px, 3.2vw, 16px);
+      opacity: 0.95;
+      margin: 0 0 14px;
+    }
+    .overlay-timer{
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 72px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.35);
+      font-weight: 800;
+      font-size: 18px;
     }
 
-    /* Pause card (stop-sign style), centered only */
-    #pauseOverlay{
-      position:fixed;inset:0;display:none;align-items:center;justify-content:center;
-      pointer-events:none;z-index:30;padding:16px;
+    /* Success toast (you can enable later when your script triggers it) */
+    .toast{
+      position: fixed;
+      left: 50%;
+      bottom: calc(18px + env(safe-area-inset-bottom));
+      transform: translateX(-50%);
+      display: none;
+      gap: 10px;
+      align-items: center;
+      background: #1b1b1f;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 12px 14px;
+      border-radius: 12px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.35);
+      z-index: 60;
+      max-width: 92vw;
     }
-    .pause-card{
-      pointer-events:auto;background:#ef4444;color:#fff;
-      width:min(86vw,520px);aspect-ratio:1/1;border-radius:24px;
-      display:grid;place-items:center;text-align:center;padding:18px;
-      border:6px solid #fff;box-shadow:0 18px 60px rgba(239,68,68,.55), inset 0 0 0 6px rgba(255,255,255,.15);
+    .toast.show{ display: inline-flex; }
+    .toast .msg{ font-weight: 700; }
+    .toast .restart{
+      margin-left: 6px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: #232329;
+      color: var(--text);
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
     }
-    .pause-title{font-size:clamp(22px,6vw,36px);font-weight:900;margin:0 0 4px}
-    .pause-sub{font-size:clamp(13px,3.4vw,16px);opacity:.95;margin-bottom:8px}
-    .pause-count{font-variant-numeric:tabular-nums;font-size:clamp(24px,7vw,38px);font-weight:800}
-
-    /* Toast */
-    #toast{
-      position:fixed;left:50%;transform:translateX(-50%);
-      bottom:max(20px, calc(env(safe-area-inset-bottom) + 16px));
-      background:#111318;color:#e7e9ee;border:1px solid var(--ring);border-radius:14px;
-      padding:12px 14px;font-size:14px;box-shadow:0 10px 32px rgba(0,0,0,.45);
-      display:none;z-index:40;max-width:min(92vw,520px);
-    }
-    #toast .msg{margin:0 0 10px}
-    #restartBtn{
-      background:#1f2937;border:1px solid rgba(255,255,255,.08);
-      width:100%;border-radius:10px;padding:10px 12px;font-weight:700;color:#fff;
-    }
+    .toast .restart:active{ transform: scale(0.98); }
   </style>
 </head>
-
 <body>
-  <main>
-    <header>
-      <div class="brand">
-        <h1>Couples Breath</h1>
-        <div class="subtle">beta</div>
+  <div class="page">
+    <!-- HEADER -->
+    <header class="header">
+      <div class="brand">Couples Breath</div>
+      <div class="pills">
+        <div class="pill"><strong id="pillMode">mode: —</strong></div>
+        <div class="pill">status: <strong id="vStatus">idle</strong></div>
+        <div class="pill">mic: <strong id="vMic">off</strong></div>
+        <div class="pill">server: <strong id="vServer">—</strong></div>
       </div>
-      <div class="pill" id="modePill">mode: <strong id="modeVal">…</strong></div>
     </header>
 
-    <section class="hero" aria-live="polite">
+    <!-- MAIN -->
+    <main class="card">
+      <div class="hint">
+        Tap <strong>Start</strong> to begin streaming audio. When hyperarousal is detected,
+        you’ll see <em>Pause and Breathe</em> for 60s.
+      </div>
+
       <div class="controls">
-        <button id="startBtn" type="button">Start</button>
-        <button id="stopBtn" type="button" disabled>Stop</button>
+        <button id="btnStart" class="btn-start">Start</button>
+        <button id="btnStop"  class="btn-stop">Stop</button>
       </div>
-    </section>
+    </main>
 
-    <footer>
-      <div class="row"><div class="label">Status</div><div class="value" id="statusVal">idle</div></div>
-      <div class="row"><div class="label">Proxy</div><div class="value url" id="proxyUrl">wss://pause-proxy.onrender.com/client</div></div>
-    </footer>
-  </main>
+    <div class="footer-spacer"></div>
+  </div>
 
-  <!-- Pause overlay -->
-  <div id="pauseOverlay" role="dialog" aria-live="assertive" aria-label="Pause and Breathe">
-    <div class="pause-card">
-      <div>
-        <h2 class="pause-title">Pause and Breathe</h2>
-        <div class="pause-sub">We’ll sit here for a minute.</div>
-        <div class="pause-count" id="countdown">60</div>
-      </div>
+  <!-- OVERLAY (stop-sign panel, not full-screen red) -->
+  <div id="overlay" class="overlay" aria-hidden="true">
+    <div class="overlay-card" role="dialog" aria-live="assertive" aria-label="Pause and Breathe">
+      <h2 class="overlay-title">Pause and Breathe</h2>
+      <p class="overlay-sub">Co-regulate for a moment.</p>
+      <div id="overlayTimer" class="overlay-timer">60s</div>
     </div>
   </div>
 
-  <!-- Success toast -->
-  <div id="toast">
-    <p class="msg">Great Work Slowing Down Together! ❤️</p>
-    <button id="restartBtn" type="button">Restart</button>
+  <!-- (Optional) SUCCESS TOAST — ready for later wiring -->
+  <div id="successToast" class="toast" aria-live="polite">
+    <span class="msg">Great Work Slowing Down Together! ❤️</span>
+    <button id="btnRestart" class="restart" type="button">Restart</button>
   </div>
 
-  <script>
-  (() => {
-    // --- UI refs
-    const modeVal   = document.getElementById('modeVal');
-    const statusVal = document.getElementById('statusVal');
-    const proxyUrl  = document.getElementById('proxyUrl');
-    const startBtn  = document.getElementById('startBtn');
-    const stopBtn   = document.getElementById('stopBtn');
+  <!-- ⬇️ PASTE YOUR EXISTING, WORKING <script>…</script> BLOCK RIGHT HERE (unchanged) ⬇️ -->
 
-    const pauseOverlay = document.getElementById('pauseOverlay');
-    const countdownEl  = document.getElementById('countdown');
-    const toast        = document.getElementById('toast');
-    const restartBtn   = document.getElementById('restartBtn');
-
-    // Allow ?proxy=wss://… override if you need it
-    const qs = new URLSearchParams(location.search);
-    const WS_URL = (qs.get('proxy') || 'wss://pause-proxy.onrender.com/client').trim();
-    proxyUrl.textContent = WS_URL;
-
-    // --- state
-    let ws = null;
-    let mediaStream = null;
-    let mediaRecorder = null;
-    let pauseTimer = null;
-    let pauseTicker = null;
-    let inPause = false;
-
-    function setStatus(msg){ statusVal.textContent = msg; }
-    function openToast(){ toast.style.display = 'block'; }
-    function closeToast(){ toast.style.display = 'none'; }
-
-    function showPause(seconds=60){
-      if (inPause) return;
-      inPause = true;
-      countdownEl.textContent = String(seconds);
-      pauseOverlay.style.display = 'flex';
-
-      let remaining = seconds;
-      pauseTicker = setInterval(() => {
-        remaining -= 1;
-        if (remaining <= 0) {
-          clearInterval(pauseTicker); pauseTicker = null;
-          hidePause();
-          openToast();
-        } else {
-          countdownEl.textContent = String(remaining);
-        }
-      }, 1000);
-
-      // safety net timer (tab throttling)
-      pauseTimer = setTimeout(() => {
-        if (pauseTicker) { clearInterval(pauseTicker); pauseTicker = null; }
-        hidePause();
-        openToast();
-      }, (seconds + 2) * 1000);
-    }
-
-    function hidePause(){
-      inPause = false;
-      pauseOverlay.style.display = 'none';
-      if (pauseTimer) { clearTimeout(pauseTimer); pauseTimer = null; }
-      if (pauseTicker){ clearInterval(pauseTicker); pauseTicker = null; }
-    }
-
-    // --- WS lifecycle
-    function connectWS(){
-      if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) return;
-      setStatus('connecting…');
-      ws = new WebSocket(WS_URL);
-
-      ws.addEventListener('open', () => setStatus('connected'));
-      ws.addEventListener('close', () => { setStatus('closed'); stopMic(); });
-      ws.addEventListener('error', () => setStatus('error'));
-
-      ws.addEventListener('message', (evt) => {
-        let msg; try { msg = JSON.parse(evt.data); } catch { return; }
-
-        if (msg?.type === 'hello') modeVal.textContent = msg.mode || 'hume';
-
-        if (msg?.type === 'hume') {
-          if (msg.status === 'connected') setStatus('stream ready');
-          if (msg.status === 'closed') setStatus('closed');
-          if (msg.status === 'error') setStatus(`error: ${msg.message || ''}`);
-        }
-
-        if (msg?.type === 'risk') setStatus('listening…');
-
-        if (msg?.type === 'trigger' && msg.kind === 'hyper') {
-          showPause(60);
-        }
-      });
-    }
-
-    // --- Audio → base64 (unchanged)
-    async function startMic(){
-      try{
-        if (!ws || ws.readyState !== WebSocket.OPEN) connectWS();
-        if (mediaRecorder && mediaRecorder.state === 'recording') return;
-
-        mediaStream = await navigator.mediaDevices.getUserMedia({ audio:true });
-        mediaRecorder = new MediaRecorder(mediaStream, { mimeType: 'audio/webm' });
-
-        mediaRecorder.ondataavailable = async (e) => {
-          if (!e.data || e.data.size === 0) return;
-          const base64 = await blobToBase64(e.data);
-          if (ws && ws.readyState === WebSocket.OPEN) {
-            try { ws.send(JSON.stringify({ type:'audio', data_b64: base64 })); } catch {}
-          }
-        };
-
-        mediaRecorder.onstart = () => setStatus('recording…');
-        mediaRecorder.onstop  = () => setStatus('stopped');
-
-        mediaRecorder.start(1000); // ~1s chunks
-      } catch(err){
-        console.error(err);
-        setStatus('mic denied');
-      }
-    }
-
-    function stopMic(){
-      try { if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop(); } catch {}
-      try { if (mediaStream) mediaStream.getTracks().forEach(t => t.stop()); } catch {}
-      mediaRecorder = null; mediaStream = null;
-    }
-
-    function blobToBase64(blob){
-      return new Promise((resolve,reject)=>{
-        const fr=new FileReader();
-        fr.onerror=reject;
-        fr.onload=()=>{
-          const s=String(fr.result||''); const i=s.indexOf('base64,');
-          resolve(i>=0 ? s.slice(i+7) : s);
-        };
-        fr.readAsDataURL(blob);
-      });
-    }
-
-    // --- Buttons
-    startBtn.addEventListener('click', () => {
-      connectWS(); startMic();
-      startBtn.disabled = true; stopBtn.disabled = false;
-    });
-    stopBtn.addEventListener('click', () => {
-      stopMic(); try{ if(ws) ws.close(); }catch{}
-      startBtn.disabled = false; stopBtn.disabled = true;
-      hidePause(); closeToast();
-    });
-    restartBtn.addEventListener('click', () => {
-      closeToast();
-      connectWS(); startMic();
-      startBtn.disabled = true; stopBtn.disabled = false;
-    });
-
-    // boot
-    modeVal.textContent='…'; setStatus('idle');
-  })();
-  </script>
 </body>
 </html>
