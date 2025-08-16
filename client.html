@@ -1,94 +1,321 @@
-<!-- Pause overlay (stop-sign style card) -->
-<div id="pauseOverlay" aria-hidden="true">
-  <div class="pause-card" role="dialog" aria-label="Pause and Breathe">
-    <div class="octagon"></div>
-    <div class="pause-text">Pause and Breathe</div>
-    <div class="pause-countdown" id="pauseCountdown">60</div>
-  </div>
-</div>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover"
+  />
+  <title>Couples Breath</title>
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
-<!-- Success toast -->
-<div id="successToast" aria-live="polite" aria-atomic="true">
-  <div class="toast-card">
-    <div class="toast-msg">Great Work Slowing Down Together! ❤️</div>
-    <button id="restartBtn" type="button">Restart</button>
-  </div>
-</div>
+  <style>
+    :root{
+      --bg: #0b0b0c;
+      --fg: #f3f4f6;
+      --muted: #9599a5;
+      --card: #121316;
+      --accent: #2563eb; /* Start button (previous look) */
+      --danger: #ef4444; /* Stop button (previous look) */
+      --ring: rgba(255,255,255,0.08);
+    }
 
-  <script>
-    /* =============== Overlay / UX helper (safe to include) =============== */
+    /* Reset & base */
+    *{ box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      overflow-x: hidden;
+    }
 
-    (function () {
-      const overlay = document.getElementById('overlay');
-      const timerEl = document.getElementById('stopTimer');
-      const successEl = document.getElementById('success');
-      const restartBtn = document.getElementById('restartBtn');
+    /* Root layout */
+    main {
+      min-height: 100dvh;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 16px;
+      padding:
+        max(12px, env(safe-area-inset-top))
+        max(16px, env(safe-area-inset-right))
+        max(12px, env(safe-area-inset-bottom))
+        max(16px, env(safe-area-inset-left));
+    }
 
-      let count = 60;
-      let tHandle = null;
-      let onDoneCb = null;
+    /* Header */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
 
-      function render() {
-        timerEl.textContent = String(count).padStart(2, '0');
-      }
+    .brand {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
 
-      function tick() {
-        count -= 1;
-        if (count <= 0) {
-          clearInterval(tHandle);
-          tHandle = null;
-          render();
-          successEl.classList.add('show');
-          restartBtn.classList.add('show');
-          if (typeof onDoneCb === 'function') {
-            try { onDoneCb(); } catch {}
-          }
-          return;
-        }
-        render();
-      }
+    .brand h1 {
+      margin: 0;
+      font-size: clamp(18px, 4.5vw, 22px);
+      font-weight: 800;
+      letter-spacing: 0.2px;
+      white-space: normal;      /* ensure space renders on iPhone */
+      word-break: normal;
+    }
 
-      function showOverlay(seconds = 60, onDone) {
-        // Reset view
-        onDoneCb = onDone || null;
-        successEl.classList.remove('show');
-        restartBtn.classList.remove('show');
+    .subtle {
+      color: var(--muted);
+      font-size: 12px;
+    }
 
-        count = Math.max(1, Math.floor(seconds));
-        render();
+    /* Card / status area */
+    .card {
+      background: var(--card);
+      border-radius: 16px;
+      box-shadow: 0 6px 24px rgba(0,0,0,0.35);
+      border: 1px solid var(--ring);
+      padding: 14px;
+    }
 
-        overlay.classList.add('show');
+    .row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .row + .row { margin-top: 8px; }
 
-        if (tHandle) clearInterval(tHandle);
-        tHandle = setInterval(tick, 1000);
+    .label { color: var(--muted); font-size: 12px; min-width: 80px; }
+    .value { font-variant-numeric: tabular-nums; }
 
-        // Optional: tell the app layer we're in a pause (if it cares)
-        if (typeof window.onPauseStarted === 'function') {
-          try { window.onPauseStarted(); } catch {}
-        }
-      }
+    .url {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 12px;
+      color: #c7d2fe;
+      background: #0e1015;
+      padding: 6px 8px;
+      border-radius: 8px;
+      border: 1px solid var(--ring);
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
 
-      function hideOverlay() {
-        overlay.classList.remove('show');
-        if (tHandle) { clearInterval(tHandle); tHandle = null; }
-        if (typeof window.onPauseEnded === 'function') {
-          try { window.onPauseEnded(); } catch {}
-        }
-      }
+    /* Controls */
+    .controls {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
 
-      restartBtn.addEventListener('click', () => {
-        hideOverlay();
-        // Let the app layer restart streaming if it implements this.
-        if (typeof window.onRestartConversation === 'function') {
-          try { window.onRestartConversation(); } catch {}
-        }
-      });
+    button {
+      appearance: none;
+      border: none;
+      border-radius: 12px;
+      padding: 12px 18px;
+      font-weight: 700;
+      color: white;
+      cursor: pointer;
+      transition: transform .04s ease, opacity .15s ease;
+      will-change: transform;
+    }
 
-      // Expose to app script
-      window.showOverlay = showOverlay;
-      window.hideOverlay = hideOverlay;
-    })();
+    #startBtn {
+      background: var(--accent);
+      box-shadow: 0 8px 22px rgba(37,99,235,0.35);
+    }
+    #stopBtn {
+      background: var(--danger);
+      box-shadow: 0 8px 22px rgba(239,68,68,0.35);
+      width: 130px; /* match visual width to Start per your earlier request */
+    }
+    button:active { transform: translateY(1px); opacity: 0.95; }
 
+    /* Readouts */
+    .readouts {
+      display: grid;
+      gap: 8px;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #0f1117;
+      border: 1px solid var(--ring);
+      color: var(--fg);
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 12px;
+    }
+
+    /* --- Pause overlay (centered card, NOT full-screen red) --- */
+    #pauseOverlay {
+      position: fixed;
+      inset: 0;
+      display: none;              /* toggled by script */
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;       /* clicks pass through except the card */
+      z-index: 1000;
+      padding: 24px;
+    }
+
+    #pauseOverlay .pause-card {
+      pointer-events: auto;
+      width: min(420px, 90vw);
+      aspect-ratio: 1/1;
+      background: #111;           /* dark card behind octagon */
+      border-radius: 24px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+      display: grid;
+      grid-template-rows: 1fr auto auto;
+      align-items: center;
+      justify-items: center;
+      gap: 12px;
+      padding: 18px;
+    }
+
+    /* red “stop-sign” octagon */
+    #pauseOverlay .octagon {
+      width: 70%;
+      aspect-ratio: 1/1;
+      background: #d32f2f;
+      clip-path: polygon(
+        30% 0%, 70% 0%,
+        100% 30%, 100% 70%,
+        70% 100%, 30% 100%,
+        0% 70%, 0% 30%
+      );
+      box-shadow: 0 6px 16px rgba(211,47,47,0.45);
+    }
+
+    /* “Pause and Breathe” title */
+    #pauseOverlay .pause-text {
+      color: #fff;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      font-size: clamp(20px, 5.2vw, 26px);
+      text-align: center;
+    }
+
+    /* countdown seconds */
+    #pauseOverlay .pause-countdown {
+      color: #ffdede;
+      font-variant-numeric: tabular-nums;
+      font-size: clamp(18px, 5vw, 22px);
+    }
+
+    /* --- Success toast --- */
+    #successToast {
+      position: fixed;
+      left: 50%;
+      bottom: 20px;
+      transform: translateX(-50%);
+      display: none;              /* toggled by script */
+      z-index: 1100;
+    }
+
+    #successToast .toast-card {
+      background: rgba(20,20,20,0.92);
+      color: #fff;
+      border-radius: 14px;
+      box-shadow: 0 8px 22px rgba(0,0,0,0.35);
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    #successToast .toast-msg {
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    #successToast #restartBtn {
+      appearance: none;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 10px;
+      background: #2563eb;
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    #successToast #restartBtn:active {
+      transform: translateY(1px);
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div class="brand">
+        <h1>Couples Breath</h1>
+        <span class="subtle">alpha</span>
+      </div>
+      <div class="pill">
+        <strong>Status:</strong>
+        <span id="status">idle</span>
+      </div>
+    </header>
+
+    <!-- Status / server card -->
+    <section class="card">
+      <div class="row">
+        <div class="label">Mode</div>
+        <div class="value" id="mode">—</div>
+      </div>
+      <div class="row">
+        <div class="label">Server</div>
+        <div class="url" id="serverUrl">—</div>
+      </div>
+      <div class="row">
+        <div class="label">Hyper</div>
+        <div class="value" id="hyperVal">—</div>
+      </div>
+    </section>
+
+    <!-- Controls -->
+    <section class="controls">
+      <button id="startBtn" type="button">Start</button>
+      <button id="stopBtn" type="button">Stop</button>
+    </section>
+
+    <!-- Readouts -->
+    <section class="readouts">
+      <div class="pill"><span>Mode:</span> <span id="modePill">—</span></div>
+      <div class="pill"><span>WS:</span> <span id="wsPill">—</span></div>
+    </section>
+
+    <!-- Pause overlay (stop-sign style card) -->
+    <div id="pauseOverlay" aria-hidden="true">
+      <div class="pause-card" role="dialog" aria-label="Pause and Breathe">
+        <div class="octagon"></div>
+        <div class="pause-text">Pause and Breathe</div>
+        <div class="pause-countdown" id="pauseCountdown">60</div>
+      </div>
+    </div>
+
+    <!-- Success toast -->
+    <div id="successToast" aria-live="polite" aria-atomic="true">
+      <div class="toast-card">
+        <div class="toast-msg">Great Work Slowing Down Together! ❤️</div>
+        <button id="restartBtn" type="button">Restart</button>
+      </div>
+    </div>
+
+    <!-- ===================== -->
+    <!-- PLACE YOUR EXISTING WORKING SCRIPT(S) BELOW THIS LINE -->
+    <!-- (Do not modify them. If you added a UI helper script earlier,
+         you can keep it below your existing script as well.) -->
+    <!-- ===================== -->
+  </main>
+</body>
+</html>
   <script>
     // ---------- CONFIG ----------
     // If you pass ?ws=wss://your-proxy/client we’ll use it; otherwise default to your Render URL.
