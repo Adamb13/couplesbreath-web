@@ -168,37 +168,53 @@
     }
 
     /* Success toast (stays until Restart is tapped; behavior handled in script) */
-    .toast{
-      position: fixed;
-      left: 50%;
-      bottom: calc(18px + env(safe-area-inset-bottom));
-      transform: translateX(-50%);
-      display: none;
-      gap: 10px;
-      align-items: center;
-      background: #1b1b1f;
-      border: 1px solid var(--border);
-      color: var(--text);
-      padding: 12px 14px;
-      border-radius: 12px;
-      box-shadow: 0 8px 30px rgba(0,0,0,0.35);
-      z-index: 60;
-      max-width: 92vw;
-    }
-    .toast.show{ display: inline-flex; }
-    .toast .msg{ font-weight: 700; }
-    .toast .restart{
-      margin-left: 6px;
-      padding: 8px 10px;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      background: #232329;
-      color: var(--text);
-      font-weight: 700;
-      font-size: 14px;
-      cursor: pointer;
-    }
-    .toast .restart:active{ transform: scale(0.98); }
+  /* Success overlay — centered, with dim backdrop (on top of red overlay) */
+.toast{
+  position: fixed;
+  inset: 0;
+  display: none;                 /* toggled to flex by .show */
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.45);  /* backdrop */
+  z-index: 60;                   /* above the red Pause overlay */
+}
+
+/* Show state */
+.toast.show{ display: flex; }
+
+/* Inner “card” */
+.toast-card{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: min(92vw, 520px);
+  background: #1b1b1f;
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 16px 18px;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.55);
+  text-align: left;
+}
+
+/* Text + button */
+.toast .msg{ 
+  font-weight: 800; 
+  line-height: 1.2;
+  font-size: 16px;
+}
+.toast .restart{
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: #232329;
+  color: var(--text);
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+}
+.toast .restart:active{ transform: scale(0.98); }
   </style>
 </head>
 <body>
