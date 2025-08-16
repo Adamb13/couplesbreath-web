@@ -1,174 +1,188 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no" />
-<title>Couples Breath</title>
-<style>
-  body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; padding: 16px; }
-  .btn { padding: 12px 16px; border-radius: 12px; border: none; background: #0d6efd; color: #fff; font-weight: 600; }
-  .btn[disabled] { opacity: .5 }
-  #overlay {
-    display: none; position: fixed; inset: 0; z-index: 9999;
-    background: rgba(0,0,0,.6);
-    align-items: center; justify-content: center;
-  }
-  .card {
-    background: #fff; padding: 24px; border-radius: 16px; width: min(90vw, 360px);
-    text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,.2);
-  }
-</style>
+  <meta charset="utf-8"/>
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
+  <title>Couples Breath</title>
+  <style>
+    body { font-family: -apple-system, system-ui, Segoe UI, Roboto, Arial; margin: 0; background:#0b1020; color:#e6eefc; }
+    .wrap { display:flex; min-height:100vh; align-items:center; justify-content:center; padding:24px; }
+    .card { width:100%; max-width:520px; background:#121a33; border:1px solid #223055; border-radius:20px; padding:20px; box-shadow: 0 6px 24px rgba(0,0,0,0.25); }
+    h1 { margin: 0 0 8px; font-size: 24px; letter-spacing: 0.3px; }
+    .muted { color:#9fb2d9; font-size: 14px; margin-bottom: 16px; }
+    .row { display:flex; gap:8px; align-items:center; margin:12px 0; flex-wrap:wrap; }
+    .btn { appearance:none; border:0; border-radius:12px; padding:12px 16px; background:#3b82f6; color:white; font-weight:600; font-size:16px; }
+    .btn.stop { background:#ef4444; }
+    .state { font-variant-numeric: tabular-nums; background:#0e1530; border:1px solid #1e2a4c; border-radius:12px; padding:10px 12px; }
+    .overlay {
+      position: fixed; inset: 0;
+      display: none; align-items:center; justify-content:center;
+      background: rgba(0,0,0,0.75); z-index: 9999;
+    }
+    .overlay.show { display:flex; }
+    .bubble {
+      background: #fef3c7; color:#111827;
+      border-radius: 20px;
+      padding: 22px 20px;
+      width: min(92vw, 520px);
+      text-align:center;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.35);
+    }
+    .bubble h2 { margin: 0 0 6px; font-size: 22px; }
+    .bubble p { margin: 6px 0 0; font-size: 16px; line-height:1.35; color:#1f2937; }
+  </style>
 </head>
 <body>
-
-<h1 style="margin:0 0 8px">Couples Breath</h1>
-<div id="status" style="margin:0 0 12px; color:#555">Idle</div>
-
-<button id="startBtn" class="btn">Start discussion</button>
-<button id="stopBtn" class="btn" style="margin-left: 8px; background:#6c757d" disabled>Stop</button>
-
-<div style="margin-top:16px; font-size:14px; color:#333">hyper: <span id="hyper">0.00</span></div>
-
-<!-- Pause overlay -->
-<div id="overlay">
-  <div class="card">
-    <h2 style="margin:0 0 8px">Time to Pause</h2>
-    <p style="margin:0 0 10px">Let’s take three slow breaths before continuing.</p>
-    <div style="font-size:12px; opacity:.65">signal: <span data-score>0.00</span></div>
+  <div class="overlay" id="pauseOverlay" aria-hidden="true">
+    <div class="bubble">
+      <h2>Time to pause</h2>
+      <p>Let’s take three slow breaths. In through the nose, out through the mouth.</p>
+    </div>
   </div>
-</div>
 
-<script>
-const WS_URL = 'wss://pause-proxy.onrender.com/client';
+  <div class="wrap">
+    <div class="card">
+      <h1>Couples Breath</h1>
+      <div class="muted">Early-warning helper during tough conversations.</div>
 
-let statusEl, hyperEl, overlayEl, scoreEl, startBtn, stopBtn;
-let ws, mediaStream, audioCtx, processor, sourceNode;
-let sending = false;
+      <div class="row">
+        <button id="startBtn" class="btn">Start session</button>
+        <button id="stopBtn" class="btn stop" disabled>Stop</button>
+      </div>
 
-// ------------ audio helpers (16k mono PCM16 -> base64) ------------
-function downsampleTo16k(input, inputSampleRate) {
-  const ratio = inputSampleRate / 16000;
-  const newLen = Math.round(input.length / ratio);
-  const result = new Float32Array(newLen);
-  let offset = 0;
-  for (let i = 0; i < newLen; i++) {
-    const start = Math.floor(i * ratio);
-    const end   = Math.min(Math.floor((i + 1) * ratio), input.length);
-    let sum = 0;
-    for (let j = start; j < end; j++) sum += input[j];
-    result[i] = sum / (end - start || 1);
-  }
-  return result;
-}
+      <div class="row">
+        <div class="state">
+          <div id="mode">mode: –</div>
+          <div id="status">status: idle</div>
+          <div id="risk">hyper: –</div>
+        </div>
+      </div>
 
-function floatTo16BitPCM(float32Array) {
-  const out = new Int16Array(float32Array.length);
-  for (let i = 0; i < float32Array.length; i++) {
-    let s = Math.max(-1, Math.min(1, float32Array[i]));
-    out[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
-  }
-  return out;
-}
+      <div class="muted" style="margin-top:8px">
+        • Keep the phone between you on a table.  
+        • Speak as you normally would.
+      </div>
+    </div>
+  </div>
 
-function int16ToBase64(int16) {
-  // Convert Int16Array -> Uint8Array -> base64
-  const u8 = new Uint8Array(int16.buffer);
-  let binary = '';
-  for (let i = 0; i < u8.length; i++) binary += String.fromCharCode(u8[i]);
-  return btoa(binary);
-}
+  <script>
+    // Bump this string when you change the file, then reload with ?v= to beat iOS cache.
+    const VERSION = '2025-08-16-a';
 
-// ------------ WS + UI ------------
-function connectWS() {
-  ws = new WebSocket(WS_URL);
-  ws.onopen = () => { statusEl.textContent = 'Connected. Tap Start to begin.'; };
-  ws.onclose = () => { statusEl.textContent = 'Disconnected'; };
-  ws.onerror = () => { statusEl.textContent = 'Connection error'; };
+    const PROXY_WS = 'wss://pause-proxy.onrender.com/client'; // your Render proxy
 
-  ws.onmessage = (evt) => {
-    let msg; try { msg = JSON.parse(evt.data); } catch { return; }
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn  = document.getElementById('stopBtn');
+    const modeEl   = document.getElementById('mode');
+    const statusEl = document.getElementById('status');
+    const riskEl   = document.getElementById('risk');
+    const overlay  = document.getElementById('pauseOverlay');
 
-    if (msg.type === 'hume') {
-      if (msg.status === 'connected') statusEl.textContent = 'Recording…';
-      if (msg.status === 'closed')    statusEl.textContent = 'Closed';
-      if (msg.status === 'error')     statusEl.textContent = 'Error: ' + (msg.message || '');
+    let ws = null;
+    let mediaRec = null;
+    let stream = null;
+
+    function showOverlay(on) {
+      overlay.classList.toggle('show', !!on);
+      overlay.setAttribute('aria-hidden', on ? 'false' : 'true');
     }
-    if (msg.type === 'risk') {
-      if (typeof msg.hyper === 'number') {
-        hyperEl.textContent = msg.hyper.toFixed(2);
+
+    function speak(text) {
+      try {
+        const u = new SpeechSynthesisUtterance(text);
+        u.rate = 0.95;
+        u.pitch = 1.0;
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak(u);
+      } catch {}
+    }
+
+    async function startSession() {
+      statusEl.textContent = 'status: requesting mic…';
+
+      try {
+        // Ask for mic (iOS Safari requires user gesture: the Start button is one)
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      } catch (e) {
+        statusEl.textContent = 'status: mic denied';
+        alert('Microphone permission is needed to monitor the discussion.');
+        return;
       }
+
+      // Open WS to proxy
+      ws = new WebSocket(PROXY_WS);
+      ws.onopen = () => {
+        statusEl.textContent = 'status: connected';
+      };
+      ws.onmessage = (evt) => {
+        let msg; try { msg = JSON.parse(evt.data); } catch { return; }
+
+        if (msg.type === 'hello') {
+          modeEl.textContent = 'mode: ' + msg.mode;
+        } else if (msg.type === 'risk' && typeof msg.hyper === 'number') {
+          riskEl.textContent = 'hyper: ' + msg.hyper.toFixed(2);
+        } else if (msg.type === 'trigger') {
+          showOverlay(true);
+          speak('Time to pause. Let’s take three slow breaths together.');
+          // Auto-hide after ~12s so the couple can continue
+          setTimeout(() => showOverlay(false), 12000);
+        } else if (msg.type === 'hume' && msg.status === 'error') {
+          statusEl.textContent = 'status: error';
+        }
+      };
+      ws.onclose = () => { statusEl.textContent = 'status: closed'; };
+
+      // Start recording in small chunks; Hume accepts these as media blobs.
+      const mime = MediaRecorder.isTypeSupported('audio/webm; codecs=opus')
+        ? 'audio/webm; codecs=opus' : 'audio/webm';
+
+      mediaRec = new MediaRecorder(stream, { mimeType: mime, audioBitsPerSecond: 32000 });
+      mediaRec.ondataavailable = async (e) => {
+        if (!e.data || !e.data.size || !ws || ws.readyState !== 1) return;
+        try {
+          const b64 = await blobToBase64(e.data);
+          ws.send(JSON.stringify({ type: 'audio', data_b64: b64 }));
+        } catch {}
+      };
+      // timeslice: emit a chunk every 800–1000ms
+      mediaRec.start(900);
+
+      startBtn.disabled = true;
+      stopBtn.disabled = false;
+      showOverlay(false);
     }
-    if (msg.type === 'trigger' && msg.kind === 'hyper') {
-      showPauseOverlay(msg.score);
+
+    function stopSession() {
+      try { mediaRec && mediaRec.state !== 'inactive' && mediaRec.stop(); } catch {}
+      try { stream && stream.getTracks().forEach(t => t.stop()); } catch {}
+      try { ws && ws.readyState === 1 && ws.close(); } catch {}
+      mediaRec = null; stream = null; ws = null;
+
+      startBtn.disabled = false;
+      stopBtn.disabled = true;
+      statusEl.textContent = 'status: idle';
+      // We leave the last risk value visible for context
     }
-  };
-}
 
-function showPauseOverlay(score) {
-  overlayEl.style.display = 'flex';
-  scoreEl.textContent = (score ?? 0).toFixed(2);
-  try {
-    const utter = new SpeechSynthesisUtterance("Let's pause and take three deep breaths together.");
-    speechSynthesis.cancel();
-    speechSynthesis.speak(utter);
-  } catch {}
-  setTimeout(() => overlayEl.style.display = 'none', 8000);
-}
+    function blobToBase64(blob) {
+      return new Promise((res, rej) => {
+        const fr = new FileReader();
+        fr.onerror = () => rej(new Error('read failed'));
+        fr.onload = () => {
+          const dataUrl = fr.result; // "data:audio/webm;codecs=opus;base64,AAAA..."
+          const b64 = String(dataUrl).split(',')[1] || '';
+          res(b64);
+        };
+        fr.readAsDataURL(blob);
+      });
+    }
 
-async function startStreaming() {
-  if (sending) return;
-  sending = true;
-  startBtn.disabled = true;
-  stopBtn.disabled = false;
+    startBtn.addEventListener('click', startSession);
+    stopBtn.addEventListener('click', stopSession);
 
-  // mic
-  mediaStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true }, video: false });
-  audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 48000 });
-  sourceNode = audioCtx.createMediaStreamSource(mediaStream);
-
-  // ScriptProcessorNode (widely supported)
-  const bufferSize = 4096;
-  processor = audioCtx.createScriptProcessor(bufferSize, 1, 1);
-  processor.onaudioprocess = (e) => {
-    if (!ws || ws.readyState !== 1 || !sending) return;
-    const input = e.inputBuffer.getChannelData(0);
-    const ds = downsampleTo16k(input, audioCtx.sampleRate);
-    const pcm16 = floatTo16BitPCM(ds);
-    const b64 = int16ToBase64(pcm16);
-    try { ws.send(JSON.stringify({ type: 'audio', data_b64: b64 })); } catch {}
-  };
-
-  sourceNode.connect(processor);
-  processor.connect(audioCtx.destination); // required on iOS to “pull” audio graph
-  statusEl.textContent = 'Recording…';
-}
-
-function stopStreaming() {
-  sending = false;
-  startBtn.disabled = false;
-  stopBtn.disabled = true;
-
-  try { if (processor) processor.disconnect(); } catch {}
-  try { if (sourceNode) sourceNode.disconnect(); } catch {}
-  try { if (audioCtx && audioCtx.state !== 'closed') audioCtx.close(); } catch {}
-  try { if (mediaStream) mediaStream.getTracks().forEach(t => t.stop()); } catch {}
-
-  statusEl.textContent = 'Stopped';
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-  statusEl  = document.getElementById('status');
-  hyperEl   = document.getElementById('hyper');
-  overlayEl = document.getElementById('overlay');
-  scoreEl   = overlayEl.querySelector('[data-score]');
-  startBtn  = document.getElementById('startBtn');
-  stopBtn   = document.getElementById('stopBtn');
-
-  connectWS();
-
-  startBtn.addEventListener('click', startStreaming);
-  stopBtn.addEventListener('click', stopStreaming);
-});
-</script>
+    console.log('Couples Breath client', VERSION);
+  </script>
 </body>
 </html>
