@@ -167,56 +167,40 @@
       font-size: 18px;
     }
 
-    /* Success toast (stays until Restart is tapped; behavior handled in script) */
-  /* Success overlay — centered, with dim backdrop (on top of red overlay) */
+  /* Success toast — centered overlay with dim backdrop */
 .toast{
-  .toast{
   position: fixed;
-  left: 50%;
-  bottom: calc(18px + env(safe-area-inset-bottom));
-  transform: translateX(-50%);
+  inset: 0;
   display: none;
-  gap: 10px;
-  align-items: center;
-  background: #1b1b1f;
-  border: 1px solid var(--border);
-  color: var(--text);
-  padding: 12px 14px;
-  border-radius: 12px;
-  box-shadow: 0 8px 30px rgba(0,0,0,0.35);
-  z-index: 60;
-  max-width: 92vw;
-}
-}
-
-/* Show state */
-.toast.show{ display: flex; }
-
-/* Inner “card” */
-.toast-card{
-  display: flex;
-  flex-direction: column;    /* stack text + button vertically */
   align-items: center;
   justify-content: center;
-  gap: 18px;                 /* more breathing room between text and button */
+  padding: 20px;
+  background: rgba(0,0,0,0.45);
+  z-index: 60;
+}
+.toast.show{ display: flex; }
+
+.toast-card{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
   width: min(92vw, 520px);
-  min-height: 40vh;          /* takes up ~40% of phone height */
+  min-height: 40vh;
   background: #1b1b1f;
   border: 1px solid var(--border);
   color: var(--text);
-  padding: 40px 24px;        /* bigger vertical padding */
+  padding: 40px 24px;
   border-radius: 20px;
   box-shadow: 0 20px 60px rgba(0,0,0,0.55);
-  text-align: center;        /* center the text */
+  text-align: center;
 }
-
-/* Text + button */
 .toast .msg{
   font-weight: 800;
   line-height: 1.4;
-  font-size: 18px;    /* was 16px */
-  text-align: center; /* center align the lines */
-}
+  font-size: 18px;
+  text-align: center;
 }
 .toast .restart{
   padding: 10px 12px;
@@ -269,11 +253,12 @@
     </div>
   </div>
 
- <!-- SUCCESS TOAST -->
+<!-- SUCCESS TOAST -->
 <div id="successToast" class="toast" aria-live="polite">
-  <span class="msg">Great Work Slowing Down Together! ❤️</span>
-  <button id="btnRestart" class="restart" type="button">Restart</button>
-</div>
+  <div class="toast-card">
+    <span class="msg">Great Work Slowing Down Together! ❤️</span>
+    <button id="btnRestart" class="restart" type="button">Restart</button>
+  </div>
 </div>
 
   <!-- PASTE YOUR EXISTING, WORKING <script>…</script> BLOCK RIGHT BELOW THIS LINE -->
