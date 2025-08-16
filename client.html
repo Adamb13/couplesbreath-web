@@ -435,5 +435,49 @@
     // Kick off a WS connection early so we can display mode / server status
     connectWS();
   </script>
+
+<script>
+(() => {
+  if (window.__toastPatchApplied) return; // avoid double-inject on hot reloads
+  window.__toastPatchApplied = true;
+
+  const overlay = document.getElementById('overlay');
+  const toast   = document.getElementById('successToast');
+  const btnRestart = document.getElementById('btnRestart');
+
+  // safety helpers
+  const showToast = () => toast && toast.classList.add('show');
+  const hideToast = () => toast && toast.classList.remove('show');
+
+  // Hook the existing global showOverlay(seconds)
+  const origShowOverlay = window.showOverlay;
+  if (typeof origShowOverlay === 'function') {
+    window.showOverlay = function(seconds = 60) {
+      // Start a parallel timer so we can show the toast when the overlay completes
+      const endAt = Date.now() + seconds * 1000;
+      const tick = setInterval(() => {
+        if (Date.now() >= endAt) {
+          clearInterval(tick);
+          // ensure overlay is hidden, then show toast
+          try { overlay && overlay.classList.remove('show'); } catch {}
+          showToast();
+        }
+      }, 200);
+
+      // run your original implementation (keeps the on-screen countdown you already have)
+      return origShowOverlay.apply(this, arguments);
+    };
+  } else {
+    console.warn('showOverlay() not found; toast patch skipped');
+  }
+
+  // Restart button: hide toast, then stop() + start() if available
+  btnRestart?.addEventListener('click', async () => {
+    hideToast();
+    try { if (typeof window.stop  === 'function') await window.stop(); } catch {}
+    try { if (typeof window.start === 'function') await window.start(); } catch {}
+  });
+})();
+</script>
 </body>
 </html>
