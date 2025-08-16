@@ -452,7 +452,7 @@
   // Hook the existing global showOverlay(seconds)
   const origShowOverlay = window.showOverlay;
   if (typeof origShowOverlay === 'function') {
-    window.showOverlay = function(seconds = 60) {
+    window.showOverlay = function(seconds = 20) {
       // Start a parallel timer so we can show the toast when the overlay completes
       const endAt = Date.now() + seconds * 1000;
       const tick = setInterval(() => {
