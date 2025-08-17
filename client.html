@@ -167,7 +167,7 @@
       font-size: 18px;
     }
 
-  /* Success toast — centered overlay with dim backdrop */
+/* Success toast — centered overlay with dim backdrop */
 .toast{
   position: fixed;
   inset: 0;
@@ -177,24 +177,29 @@
   padding: 20px;
   background: rgba(0,0,0,0.45);
   z-index: 60;
+  pointer-events: none;              /* allow taps to pass through backdrop */
 }
 .toast.show{ display: flex; }
 
 .toast-card{
+  pointer-events: auto;              /* only the card catches taps */
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 18px;
   width: min(92vw, 520px);
-  min-height: 40vh;
+  min-height: 32vh;                  /* was 40vh → shorter so it overlaps less */
   background: #1b1b1f;
   border: 1px solid var(--border);
   color: var(--text);
-  padding: 40px 24px;
+  padding: 32px 22px;                /* slightly tighter padding */
   border-radius: 20px;
   box-shadow: 0 20px 60px rgba(0,0,0,0.55);
   text-align: center;
+
+  /* 👇 nudge the card downward ~8vh (≈ 67px on iPhone 14) */
+  transform: translateY(8vh);
 }
 .toast .msg{
   font-weight: 800;
