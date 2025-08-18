@@ -414,7 +414,15 @@
       setServer('connecting');
       ws.onopen = ()=> setServer('connected');
       ws.onerror = ()=> setServer('error');
-      ws.onclose = ()=> setServer('closed');
+      
+      ws.onclose = () => {
+  setServer('closed');
+  // if user is still listening, try to reconnect after brief delay
+  if (vStatus.textContent === 'listening') {
+    setTimeout(() => { connectWS(); }, 1000);
+  }
+};
+  
       ws.onmessage = (ev)=>{
         let msg; try{ msg = JSON.parse(ev.data); } catch { return; }
         if (msg.type === 'hello'){
