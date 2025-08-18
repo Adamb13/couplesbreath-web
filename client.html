@@ -34,7 +34,24 @@
       padding-bottom: max(16px, env(safe-area-inset-bottom));
       gap: 16px;
     }
+  .breath-circle{
+    width: 140px;
+    height: 140px;
+    margin: 8px auto 12px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.18);
+    border: 1px solid rgba(255,255,255,0.35);
+    transform: scale(1);
+    transition: transform 1s ease-in-out; /* duration gets updated by JS per phase */
+  }
 
+
+
+
+
+
+
+    
     /* Header: compact status row */
     .header{
       display: flex;
@@ -267,6 +284,7 @@
       <h2 class="overlay-title">Pause and Breathe</h2>
       <p class="overlay-sub">Deep Breath, Hold, Slow Exhale, Repeat</p>
       <div id="breathCue" class="breath-cue">Inhale</div>
+      <div id="breathCircle" class="breath-circle"></div>
       <div id="overlayTimer" class="overlay-timer">20s</div>
     </div>
   </div>
@@ -353,54 +371,64 @@
     function setMode(m){ pillMode.textContent = 'mode: ' + m; }
 
     function showOverlay(seconds = 60, pattern = [3, 1, 4]) {
-    // pattern = [Inhale, Hold, Exhale] seconds, loops until total 'seconds' elapses
-    const cueEl = document.getElementById('breathCue');
-    const timerEl = document.getElementById('overlayTimer');
-    const overlay = document.getElementById('overlay');
+  const cueEl    = document.getElementById('breathCue');
+  const timerEl  = document.getElementById('overlayTimer');
+  const overlay  = document.getElementById('overlay');
+  const circle   = document.getElementById('breathCircle');
 
-    overlay.classList.add('show');
+  overlay.classList.add('show');
 
-    // countdown
-    let remain = seconds;
-    if (timerEl) timerEl.textContent = remain + 's';
+  // clear any previous timer if user retriggers quickly
+  if (window.__overlayTick) clearInterval(window.__overlayTick);
 
-    const phases = [
-      { label: 'Inhale', className: 'breath-in'   , len: pattern[0] ?? 3 },
-      { label: 'Hold'  , className: 'breath-hold' , len: pattern[1] ?? 1 },
-      { label: 'Exhale', className: 'breath-out'  , len: pattern[2] ?? 4 },
-    ];
+  // countdown
+  let remain = seconds;
+  if (timerEl) timerEl.textContent = remain + 's';
 
-    let phaseIdx = 0;
-    let phaseLeft = phases[0].len;
+  const phases = [
+    { label: 'Inhale', className: 'breath-in'  , len: pattern[0] ?? 3, targetScale: 1.28 },
+    { label: 'Hold'  , className: 'breath-hold', len: pattern[1] ?? 1, targetScale: 1.28 },
+    { label: 'Exhale', className: 'breath-out' , len: pattern[2] ?? 4, targetScale: 1.00 },
+  ];
 
-    function setCue(i){
-      if (!cueEl) return;
-      cueEl.textContent = phases[i].label;
+  let phaseIdx  = 0;
+  let phaseLeft = phases[0].len;
+
+  function applyPhase(i){
+    const p = phases[i];
+    if (cueEl) {
+      cueEl.textContent = p.label;
       cueEl.classList.remove('breath-in','breath-hold','breath-out');
-      cueEl.classList.add(phases[i].className);
-      phaseLeft = phases[i].len;
+      cueEl.classList.add(p.className);
     }
-
-    setCue(0);
-
-    const tick = setInterval(() => {
-      remain -= 1;
-      if (timerEl) timerEl.textContent = Math.max(remain, 0) + 's';
-
-      // advance within the 3–1–4 cadence
-      phaseLeft -= 1;
-      if (phaseLeft <= 0) {
-        phaseIdx = (phaseIdx + 1) % phases.length;
-        setCue(phaseIdx);
-      }
-
-      if (remain <= 0) {
-        clearInterval(tick);
-        overlay.classList.remove('show');
-      }
-    }, 1000);
+    if (circle) {
+      circle.style.transition = `transform ${p.len}s ease-in-out`;
+      circle.style.transform  = `scale(${p.targetScale})`;
+    }
+    phaseLeft = p.len;
   }
 
+  // start at inhale
+  applyPhase(0);
+
+  window.__overlayTick = setInterval(() => {
+    remain -= 1;
+    if (timerEl) timerEl.textContent = Math.max(remain, 0) + 's';
+
+    // step the 3–1–4 cadence
+    phaseLeft -= 1;
+    if (phaseLeft <= 0) {
+      phaseIdx = (phaseIdx + 1) % phases.length;
+      applyPhase(phaseIdx);
+    }
+
+    // end of overlay
+    if (remain <= 0) {
+      clearInterval(window.__overlayTick);
+      overlay.classList.remove('show');
+    }
+  }, 1000);
+}
     // Tap feedback (no pulsing)
     function tapFeedback(el){
       el.style.transform = 'scale(0.98)';
