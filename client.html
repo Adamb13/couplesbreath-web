@@ -195,6 +195,17 @@
   .breath-hold  { color: #ffe9b3; }
   .breath-out   { color: #ffd0d0; }
 
+/* Animated breathing dot */
+  .breath-dot {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: radial-gradient(circle at center, #4ade80, #15803d); /* soothing green */
+    margin: 18px auto;
+    transform: scale(1);
+    transition: transform 3s ease-in-out;
+  }
+    
     
 /* Success toast — centered overlay with dim backdrop */
 .toast{
@@ -284,7 +295,7 @@
       <h2 class="overlay-title">Pause and Breathe</h2>
       <p class="overlay-sub">Deep Breath, Hold, Slow Exhale, Repeat</p>
       <div id="breathCue" class="breath-cue">Inhale</div>
-      <div id="breathCircle" class="breath-circle"></div>
+      <div id="breathDot" class="breath-dot" aria-hidden="true"></div>
       <div id="overlayTimer" class="overlay-timer">20s</div>
     </div>
   </div>
