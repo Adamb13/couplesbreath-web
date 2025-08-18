@@ -166,7 +166,19 @@
       font-weight: 800;
       font-size: 18px;
     }
+  .breath-cue{
+    font-size: clamp(16px, 3.8vw, 20px);
+    font-weight: 800;
+    letter-spacing: 0.2px;
+    margin: 6px 0 12px;
+    text-align: center;
+    opacity: 0.98;
+  }
+  .breath-in    { color: #fff; }       /* optional phase colors */
+  .breath-hold  { color: #ffe9b3; }
+  .breath-out   { color: #ffd0d0; }
 
+    
 /* Success toast — centered overlay with dim backdrop */
 .toast{
   position: fixed;
@@ -254,6 +266,7 @@
     <div class="overlay-card" role="dialog" aria-live="assertive" aria-label="Pause and Breathe">
       <h2 class="overlay-title">Pause and Breathe</h2>
       <p class="overlay-sub">Deep Breath, Hold, Slow Exhale, Repeat</p>
+      <div id="breathCue" class="breath-cue">Inhale</div>
       <div id="overlayTimer" class="overlay-timer">20s</div>
     </div>
   </div>
@@ -339,20 +352,54 @@
     function setServer(s){ vServer.textContent = s; }
     function setMode(m){ pillMode.textContent = 'mode: ' + m; }
 
-    function showOverlay(seconds=60){
-      overlay.classList.add('show');
-      let remain = seconds;
-      overlayTmr.textContent = remain + 's';
-      const t = setInterval(()=>{
-        remain -= 1;
-        overlayTmr.textContent = Math.max(remain,0) + 's';
-        if (remain <= 0){
-          clearInterval(t);
-          overlay.classList.remove('show');
-        }
-      },1000);
-      // Also auto-hide if server reconnects with another trigger later — timer handles default.
+    function showOverlay(seconds = 60, pattern = [3, 1, 4]) {
+    // pattern = [Inhale, Hold, Exhale] seconds, loops until total 'seconds' elapses
+    const cueEl = document.getElementById('breathCue');
+    const timerEl = document.getElementById('overlayTimer');
+    const overlay = document.getElementById('overlay');
+
+    overlay.classList.add('show');
+
+    // countdown
+    let remain = seconds;
+    if (timerEl) timerEl.textContent = remain + 's';
+
+    const phases = [
+      { label: 'Inhale', className: 'breath-in'   , len: pattern[0] ?? 3 },
+      { label: 'Hold'  , className: 'breath-hold' , len: pattern[1] ?? 1 },
+      { label: 'Exhale', className: 'breath-out'  , len: pattern[2] ?? 4 },
+    ];
+
+    let phaseIdx = 0;
+    let phaseLeft = phases[0].len;
+
+    function setCue(i){
+      if (!cueEl) return;
+      cueEl.textContent = phases[i].label;
+      cueEl.classList.remove('breath-in','breath-hold','breath-out');
+      cueEl.classList.add(phases[i].className);
+      phaseLeft = phases[i].len;
     }
+
+    setCue(0);
+
+    const tick = setInterval(() => {
+      remain -= 1;
+      if (timerEl) timerEl.textContent = Math.max(remain, 0) + 's';
+
+      // advance within the 3–1–4 cadence
+      phaseLeft -= 1;
+      if (phaseLeft <= 0) {
+        phaseIdx = (phaseIdx + 1) % phases.length;
+        setCue(phaseIdx);
+      }
+
+      if (remain <= 0) {
+        clearInterval(tick);
+        overlay.classList.remove('show');
+      }
+    }, 1000);
+  }
 
     // Tap feedback (no pulsing)
     function tapFeedback(el){
