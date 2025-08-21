@@ -35,7 +35,7 @@
       gap: 16px;
     }
 
-    /* Header: compact status row */
+    /* Header */
     .header{
       display: flex;
       align-items: center;
@@ -45,31 +45,17 @@
       width: 100%;
       margin: 0 auto;
     }
-    .brand{
-      font-weight: 700;
-      letter-spacing: 0.2px;
-    }
-    .pills{
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      justify-content: flex-end;
-    }
+    .brand{ font-weight: 700; letter-spacing: 0.2px; }
+    .pills{ display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
     .pill{
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 6px 10px;
-      border-radius: 999px;
-      background: #1b1b1f;
-      border: 1px solid var(--border);
-      color: var(--muted);
-      font-size: 13px;
-      white-space: nowrap;
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 6px 10px; border-radius: 999px;
+      background: #1b1b1f; border: 1px solid var(--border);
+      color: var(--muted); font-size: 13px; white-space: nowrap;
     }
     .pill strong{ color: var(--text); font-weight: 600; }
 
-    /* Main card */
+    /* Body card */
     .card{
       background: var(--panel);
       border: 1px solid var(--border);
@@ -82,32 +68,18 @@
       width: 100%;
       margin: 0 auto;
     }
+    .hint{ color: var(--muted); font-size: 14px; }
 
-    .hint{
-      color: var(--muted);
-      font-size: 14px;
-    }
-
-    /* Controls row */
     .controls{
-      display: grid;
-      grid-template-columns: 1fr 1fr; /* equal widths */
-      gap: 12px;
-      position: sticky;
-      bottom: 0;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+      position: sticky; bottom: 0;
       background: linear-gradient(180deg, rgba(11,11,12,0), rgba(11,11,12,0.6));
       padding-top: 6px;
     }
     button{
-      appearance: none;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 14px 16px;
-      font-weight: 700;
-      font-size: 16px;
-      color: white;
-      background: #1c1c21;
-      cursor: pointer;
+      appearance: none; border: 1px solid var(--border); border-radius: 12px;
+      padding: 14px 16px; font-weight: 700; font-size: 16px; color: white;
+      background: #1c1c21; cursor: pointer;
       transition: transform .06s ease, filter .06s ease, background .12s ease, border-color .12s ease;
       touch-action: manipulation;
     }
@@ -115,19 +87,13 @@
     .btn-start{ background: var(--accent); border-color: #1e4fcc; }
     .btn-stop { background: var(--danger); border-color: #c73131; }
 
-    /* Notch-safe bottom spacing on iOS */
     .footer-spacer{ height: max(8px, env(safe-area-inset-bottom)); }
 
     /* Overlay base */
     .overlay{
-      position: fixed;
-      inset: 0;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-      background: rgba(0,0,0,0.45);
-      z-index: 50;
+      position: fixed; inset: 0;
+      display: none; align-items: center; justify-content: center;
+      padding: 20px; background: rgba(0,0,0,0.45); z-index: 50;
     }
     .overlay.show{ display: flex; }
 
@@ -140,50 +106,35 @@
       padding: 28px 22px;
       text-align: center;
       border: 2px solid #7f1d1d;
-      max-height: 80vh;                    /* keep tidy on small phones */
+      max-height: 80vh;
       display: grid;
       justify-items: center;
     }
 
-    /* Calm gradient overrides the red when overlay is actually shown */
+    /* Calm teal/indigo gradient when overlay is visible */
     .overlay.show .overlay-card {
       background: radial-gradient(120% 120% at 50% 30%, #0ea5a1 0%, #0f766e 35%, #2563eb 100%);
       border-color: rgba(255,255,255,0.18);
       box-shadow: 0 22px 60px rgba(0,0,0,0.55), inset 0 0 24px rgba(255,255,255,0.08);
     }
 
-    .overlay-title{
-      font-size: clamp(22px, 4.5vw, 28px);
-      font-weight: 900;
-      letter-spacing: 0.3px;
-      margin: 0 0 8px;
-    }
-    .overlay-sub{
-      font-size: clamp(14px, 3.4vw, 18px);
-      line-height: 1.35;
-      opacity: 0.98;
-      margin: 0 0 12px;
-      font-weight: 600;
-    }
+    .overlay-title{ font-size: clamp(22px, 4.5vw, 28px); font-weight: 900; letter-spacing: 0.3px; margin: 0 0 8px; }
+    .overlay-sub{ font-size: clamp(14px, 3.4vw, 18px); line-height: 1.35; opacity: 0.98; margin: 0 0 12px; font-weight: 600; }
 
-    .breath-cue{
-      font-size: clamp(16px, 3.8vw, 20px);
-      font-weight: 800;
-      letter-spacing: 0.2px;
-      margin: 4px 0 10px;
-      text-align: center;
-      opacity: 0.98;
+    /* Dot + centered cue */
+    .breath-wrap{
+      position: relative;
+      width: 100%;
+      display: grid;
+      place-items: center;
+      margin: 6px 0 10px;
     }
-    .breath-in    { color: #ffffff; }
-    .breath-hold  { color: #ffe9b3; }
-    .breath-out   { color: #ffd0d0; }
-
-    /* Breathing dot (responsive, calm look) */
-    .breath-dot {
+    .breath-dot{
       width: clamp(140px, 34vh, 260px);
       height: clamp(140px, 34vh, 260px);
+      max-width: 70%;   /* cap to 70% card width */
+      max-height: 70%;
       border-radius: 50%;
-      margin: 10px auto 14px;
       background: radial-gradient(circle at 50% 40%,
         rgba(255,255,255,0.40) 0%,
         rgba(255,255,255,0.22) 45%,
@@ -192,70 +143,49 @@
       box-shadow:
         0 14px 34px rgba(0,0,0,0.38),
         inset 0 0 34px rgba(255,255,255,0.16);
-      transform: scale(1.0);               /* JS moves this per phase */
-      transition: transform 1s ease-in-out;/* JS replaces duration per phase */
+      transform: scale(0.82);                  /* start small */
+      transition: transform 1s ease-in-out;    /* per-phase timing set in JS */
     }
+    .breath-cue{
+      position: absolute; inset: 0;
+      display: grid; place-items: center;
+      font-size: clamp(18px, 4.2vw, 24px);
+      font-weight: 900;
+      letter-spacing: 0.2px;
+      color: #fff;
+      text-shadow: 0 2px 6px rgba(0,0,0,0.25);
+      pointer-events: none;
+    }
+    .breath-in    { color: #ffffff; }
+    .breath-hold  { color: #ffe9b3; }
+    .breath-out   { color: #ffd0d0; }
 
     .overlay-timer{
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-width: 80px;
-      padding: 10px 14px;
-      border-radius: 999px;
-      background: rgba(255,255,255,0.15);
-      border: 1px solid rgba(255,255,255,0.35);
-      font-weight: 800;
-      font-size: 18px;
+      display: inline-flex; align-items: center; justify-content: center;
+      min-width: 80px; padding: 10px 14px; border-radius: 999px;
+      background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.35);
+      font-weight: 800; font-size: 18px;
     }
 
-    /* Success toast — centered overlay with dim backdrop */
+    /* Success toast */
     .toast{
-      position: fixed;
-      inset: 0;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-      background: rgba(0,0,0,0.45);
-      z-index: 60;
-      pointer-events: none;              /* allow taps to pass through backdrop */
+      position: fixed; inset: 0;
+      display: none; align-items: center; justify-content: center;
+      padding: 20px; background: rgba(0,0,0,0.45); z-index: 60; pointer-events: none;
     }
     .toast.show{ display: flex; }
-
     .toast-card{
-      pointer-events: auto;              /* only the card catches taps */
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 18px;
-      width: min(92vw, 520px);
-      min-height: 32vh;                  /* compact so it doesn't feel heavy */
-      background: #1b1b1f;
-      border: 1px solid var(--border);
-      color: var(--text);
-      padding: 32px 22px;
-      border-radius: 20px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.55);
-      text-align: center;
-      transform: translateY(8vh);        /* sit slightly lower than perfect center */
+      pointer-events: auto;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
+      width: min(92vw, 520px); min-height: 32vh;
+      background: #1b1b1f; border: 1px solid var(--border); color: var(--text);
+      padding: 32px 22px; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.55);
+      text-align: center; transform: translateY(8vh);
     }
-    .toast .msg{
-      font-weight: 800;
-      line-height: 1.4;
-      font-size: 18px;
-      text-align: center;
-    }
+    .toast .msg{ font-weight: 800; line-height: 1.4; font-size: 18px; text-align: center; }
     .toast .restart{
-      padding: 10px 12px;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      background: #232329;
-      color: var(--text);
-      font-weight: 700;
-      font-size: 14px;
-      cursor: pointer;
+      padding: 10px 12px; border-radius: 12px; border: 1px solid var(--border);
+      background: #232329; color: var(--text); font-weight: 700; font-size: 14px; cursor: pointer;
     }
     .toast .restart:active{ transform: scale(0.98); }
   </style>
@@ -294,8 +224,10 @@
     <div class="overlay-card" role="dialog" aria-live="assertive" aria-label="Pause and Breathe">
       <h2 class="overlay-title">Pause and Breathe</h2>
       <p class="overlay-sub">Deep Breath, Hold, Slow Exhale, Repeat</p>
-      <div id="breathCue" class="breath-cue">Inhale</div>
-      <div id="breathDot" class="breath-dot" aria-hidden="true"></div>
+      <div class="breath-wrap">
+        <div id="breathDot" class="breath-dot" aria-hidden="true"></div>
+        <div id="breathCue" class="breath-cue">Inhale</div>
+      </div>
       <div id="overlayTimer" class="overlay-timer">20s</div>
     </div>
   </div>
@@ -347,8 +279,8 @@
     function setServer(s){ vServer.textContent = s; }
     function setMode(m){ pillMode.textContent = 'mode: ' + m; }
 
-    // Breathing overlay with 3-1-4 cadence
-    function showOverlay(seconds = 60, pattern = [3, 1, 4]) {
+    // Breathing overlay — 4-4-4-4 cadence (inhale, hold, exhale, hold)
+    function showOverlay(seconds = 60, pattern = [4, 4, 4, 4]) {
       const cueEl   = byId('breathCue');
       const timerEl = byId('overlayTimer');
       const dotEl   = byId('breathDot');
@@ -360,10 +292,14 @@
       let remain = seconds;
       if (timerEl) timerEl.textContent = remain + 's';
 
+      const MIN_SCALE = 0.82;  // small
+      const MAX_SCALE = 1.00;  // big (capped visually by CSS max-size)
+
       const phases = [
-        { label: 'Inhale', className: 'breath-in'  , len: pattern[0] ?? 3, targetScale: 1.28 },
-        { label: 'Hold'  , className: 'breath-hold', len: pattern[1] ?? 1, targetScale: 1.28 },
-        { label: 'Exhale', className: 'breath-out' , len: pattern[2] ?? 4, targetScale: 1.00 },
+        { label: 'Inhale', className:'breath-in',   len: pattern[0] ?? 4, scale: MAX_SCALE, easing:'cubic-bezier(0.25,0.8,0.5,1)' },
+        { label: 'Hold',   className:'breath-hold', len: pattern[1] ?? 4, scale: MAX_SCALE, easing:'linear' },
+        { label: 'Exhale', className:'breath-out',  len: pattern[2] ?? 4, scale: MIN_SCALE, easing:'cubic-bezier(0.4,0,0.2,1)' },
+        { label: 'Hold',   className:'breath-hold', len: pattern[3] ?? 4, scale: MIN_SCALE, easing:'linear' },
       ];
 
       let phaseIdx  = 0;
@@ -377,12 +313,14 @@
           cueEl.classList.add(p.className);
         }
         if (dotEl){
-          dotEl.style.transition = `transform ${Math.max(p.len,0.5)}s ease-in-out`;
-          dotEl.style.transform  = `scale(${p.targetScale})`;
+          dotEl.style.transition = `transform ${Math.max(p.len,0.5)}s ${p.easing || 'ease-in-out'}`;
+          dotEl.style.transform  = `scale(${p.scale})`;
         }
         phaseLeft = p.len;
       }
 
+      // start small, then inhale grows
+      if (dotEl) dotEl.style.transform = `scale(${MIN_SCALE})`;
       applyPhase(0);
 
       window.__overlayTick = setInterval(() => {
@@ -398,18 +336,14 @@
         if (remain <= 0) {
           clearInterval(window.__overlayTick);
           overlay.classList.remove('show');
-          // reset dot for next time
-          if (dotEl) {
-            dotEl.style.transition = 'transform 0.4s ease-in-out';
-            dotEl.style.transform  = 'scale(1.0)';
-          }
+          if (dotEl) { dotEl.style.transition = 'transform 0.4s ease'; dotEl.style.transform = `scale(${MIN_SCALE})`; }
         }
       }, 1000);
     }
 
     function tapFeedback(el){ el.style.transform = 'scale(0.98)'; setTimeout(()=>{ el.style.transform = 'scale(1)'; }, 120); }
 
-    // --- WS wiring ---
+    // WebSocket wiring
     function connectWS(){
       if (ws && ws.readyState === WebSocket.OPEN) return;
       ws = new WebSocket(WS_URL);
@@ -427,7 +361,7 @@
         } else if (msg.type === 'hume'){
           setServer(msg.status || '—');
         } else if (msg.type === 'trigger'){
-          if (msg.kind === 'hyper') showOverlay(20); // 20s overlay
+          if (msg.kind === 'hyper') showOverlay(20); // 20-second overlay
         }
       };
     }
@@ -482,18 +416,17 @@
       try { if (audioCtx) await audioCtx.close(); } catch {}
       try { if (mediaStream) mediaStream.getTracks().forEach(t=>t.stop()); } catch {}
       mediaStream = null; audioCtx = null; processor = null; micSource = null;
-      setMic('off');
-      setStatus('idle');
+      setMic('off'); setStatus('idle');
     }
 
     btnStart.addEventListener('click', start);
     btnStop .addEventListener('click', stop);
 
-    // Bring up a WS early so pills show status
+    // Connect early so pills show status
     connectWS();
   </script>
 
-  <!-- Success toast patch (unchanged behavior) -->
+  <!-- Success toast patch -->
   <script>
   (() => {
     if (window.__toastPatchApplied) return;
