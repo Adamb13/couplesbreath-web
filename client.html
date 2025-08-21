@@ -34,24 +34,7 @@
       padding-bottom: max(16px, env(safe-area-inset-bottom));
       gap: 16px;
     }
-  .breath-circle{
-    width: 140px;
-    height: 140px;
-    margin: 8px auto 12px;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.18);
-    border: 1px solid rgba(255,255,255,0.35);
-    transform: scale(1);
-    transition: transform 1s ease-in-out; /* duration gets updated by JS per phase */
-  }
 
-
-
-
-
-
-
-    
     /* Header: compact status row */
     .header{
       display: flex;
@@ -135,7 +118,7 @@
     /* Notch-safe bottom spacing on iOS */
     .footer-spacer{ height: max(8px, env(safe-area-inset-bottom)); }
 
-    /* Overlay: dimmed backdrop + centered red card (not full-screen red) */
+    /* Overlay base */
     .overlay{
       position: fixed;
       inset: 0;
@@ -150,14 +133,25 @@
 
     .overlay-card{
       width: min(92vw, 560px);
-      background: #b91c1c;                /* stop-sign red */
+      background: #b91c1c;                /* baseline (overridden when .overlay.show) */
       color: #fff;
       border-radius: 20px;
       box-shadow: 0 20px 60px rgba(0,0,0,0.55);
       padding: 28px 22px;
       text-align: center;
       border: 2px solid #7f1d1d;
+      max-height: 80vh;                    /* keep tidy on small phones */
+      display: grid;
+      justify-items: center;
     }
+
+    /* Calm gradient overrides the red when overlay is actually shown */
+    .overlay.show .overlay-card {
+      background: radial-gradient(120% 120% at 50% 30%, #0ea5a1 0%, #0f766e 35%, #2563eb 100%);
+      border-color: rgba(255,255,255,0.18);
+      box-shadow: 0 22px 60px rgba(0,0,0,0.55), inset 0 0 24px rgba(255,255,255,0.08);
+    }
+
     .overlay-title{
       font-size: clamp(22px, 4.5vw, 28px);
       font-weight: 900;
@@ -168,9 +162,40 @@
       font-size: clamp(14px, 3.4vw, 18px);
       line-height: 1.35;
       opacity: 0.98;
-      margin: 0 0 14px;
+      margin: 0 0 12px;
       font-weight: 600;
     }
+
+    .breath-cue{
+      font-size: clamp(16px, 3.8vw, 20px);
+      font-weight: 800;
+      letter-spacing: 0.2px;
+      margin: 4px 0 10px;
+      text-align: center;
+      opacity: 0.98;
+    }
+    .breath-in    { color: #ffffff; }
+    .breath-hold  { color: #ffe9b3; }
+    .breath-out   { color: #ffd0d0; }
+
+    /* Breathing dot (responsive, calm look) */
+    .breath-dot {
+      width: clamp(140px, 34vh, 260px);
+      height: clamp(140px, 34vh, 260px);
+      border-radius: 50%;
+      margin: 10px auto 14px;
+      background: radial-gradient(circle at 50% 40%,
+        rgba(255,255,255,0.40) 0%,
+        rgba(255,255,255,0.22) 45%,
+        rgba(255,255,255,0.10) 70%,
+        rgba(255,255,255,0.06) 100%);
+      box-shadow:
+        0 14px 34px rgba(0,0,0,0.38),
+        inset 0 0 34px rgba(255,255,255,0.16);
+      transform: scale(1.0);               /* JS moves this per phase */
+      transition: transform 1s ease-in-out;/* JS replaces duration per phase */
+    }
+
     .overlay-timer{
       display: inline-flex;
       align-items: center;
@@ -183,81 +208,56 @@
       font-weight: 800;
       font-size: 18px;
     }
-  .breath-cue{
-    font-size: clamp(16px, 3.8vw, 20px);
-    font-weight: 800;
-    letter-spacing: 0.2px;
-    margin: 6px 0 12px;
-    text-align: center;
-    opacity: 0.98;
-  }
-  .breath-in    { color: #fff; }       /* optional phase colors */
-  .breath-hold  { color: #ffe9b3; }
-  .breath-out   { color: #ffd0d0; }
 
-/* Animated breathing dot */
-  .breath-dot {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    background: radial-gradient(circle at center, #4ade80, #15803d); /* soothing green */
-    margin: 18px auto;
-    transform: scale(1);
-    transition: transform 3s ease-in-out;
-  }
-    
-    
-/* Success toast — centered overlay with dim backdrop */
-.toast{
-  position: fixed;
-  inset: 0;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  background: rgba(0,0,0,0.45);
-  z-index: 60;
-  pointer-events: none;              /* allow taps to pass through backdrop */
-}
-.toast.show{ display: flex; }
+    /* Success toast — centered overlay with dim backdrop */
+    .toast{
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: rgba(0,0,0,0.45);
+      z-index: 60;
+      pointer-events: none;              /* allow taps to pass through backdrop */
+    }
+    .toast.show{ display: flex; }
 
-.toast-card{
-  pointer-events: auto;              /* only the card catches taps */
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 18px;
-  width: min(92vw, 520px);
-  min-height: 32vh;                  /* was 40vh → shorter so it overlaps less */
-  background: #1b1b1f;
-  border: 1px solid var(--border);
-  color: var(--text);
-  padding: 32px 22px;                /* slightly tighter padding */
-  border-radius: 20px;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.55);
-  text-align: center;
-
-  /* 👇 nudge the card downward ~8vh (≈ 67px on iPhone 14) */
-  transform: translateY(8vh);
-}
-.toast .msg{
-  font-weight: 800;
-  line-height: 1.4;
-  font-size: 18px;
-  text-align: center;
-}
-.toast .restart{
-  padding: 10px 12px;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  background: #232329;
-  color: var(--text);
-  font-weight: 700;
-  font-size: 14px;
-  cursor: pointer;
-}
-.toast .restart:active{ transform: scale(0.98); }
+    .toast-card{
+      pointer-events: auto;              /* only the card catches taps */
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      width: min(92vw, 520px);
+      min-height: 32vh;                  /* compact so it doesn't feel heavy */
+      background: #1b1b1f;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 32px 22px;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.55);
+      text-align: center;
+      transform: translateY(8vh);        /* sit slightly lower than perfect center */
+    }
+    .toast .msg{
+      font-weight: 800;
+      line-height: 1.4;
+      font-size: 18px;
+      text-align: center;
+    }
+    .toast .restart{
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: #232329;
+      color: var(--text);
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .toast .restart:active{ transform: scale(0.98); }
   </style>
 </head>
 <body>
@@ -277,7 +277,7 @@
     <main class="card">
       <div class="hint">
         Tap <strong>Start</strong> to begin streaming audio. When hyperarousal is detected,
-        you’ll see <em>Pause and Breathe</em> for 60s.
+        you’ll see <em>Pause and Breathe</em>.
       </div>
 
       <div class="controls">
@@ -289,7 +289,7 @@
     <div class="footer-spacer"></div>
   </div>
 
-  <!-- OVERLAY (stop-sign panel, not full-screen red) -->
+  <!-- OVERLAY -->
   <div id="overlay" class="overlay" aria-hidden="true">
     <div class="overlay-card" role="dialog" aria-live="assertive" aria-label="Pause and Breathe">
       <h2 class="overlay-title">Pause and Breathe</h2>
@@ -300,180 +300,134 @@
     </div>
   </div>
 
-<!-- SUCCESS TOAST -->
-<div id="successToast" class="toast" aria-live="polite">
-  <div class="toast-card">
-    <span class="msg">Great Work Slowing Down Together! ❤️</span>
-    <button id="btnRestart" class="restart" type="button">Restart</button>
+  <!-- SUCCESS TOAST -->
+  <div id="successToast" class="toast" aria-live="polite">
+    <div class="toast-card">
+      <span class="msg">Great Work Slowing Down Together! ❤️</span>
+      <button id="btnRestart" class="restart" type="button">Restart</button>
+    </div>
   </div>
-</div>
 
-  <!-- PASTE YOUR EXISTING, WORKING <script>…</script> BLOCK RIGHT BELOW THIS LINE -->
-  <!-- (leave everything above exactly as-is) -->
-</body>
-</html>
-  <!-- ⬇️ PASTE YOUR EXISTING, WORKING <script>…</script> BLOCK RIGHT HERE (unchanged) ⬇️ -->
-<script>
+  <!-- APP SCRIPT -->
+  <script>
     // ---------- CONFIG ----------
-    // If you pass ?ws=wss://your-proxy/client we’ll use it; otherwise default to your Render URL.
     const qs = new URLSearchParams(location.search);
     const WS_URL = qs.get('ws') || 'wss://pause-proxy.onrender.com/client';
 
-    // WAV writer (kept intentionally identical to your working flow: sends {type:'audio', data_b64})
-    const CHUNK_MS = 1000; // ~1s chunks, matches your server logs (~43752 base64 length)
-    let mediaStream, audioCtx, processor, micSource, encoder, ws, sendTimer;
+    const CHUNK_MS = 1000;
+    let mediaStream, audioCtx, processor, micSource, ws;
 
-    // Simple WAV encoder for mono 16-bit PCM (keeps server happy)
+    // WAV encoder
     function pcm16leToWavBase64(float32, sampleRate){
-      const numChannels = 1;
-      const bytesPerSample = 2;
-      const blockAlign = numChannels * bytesPerSample;
+      const numChannels = 1, bytesPerSample = 2, blockAlign = numChannels * bytesPerSample;
       const byteRate = sampleRate * blockAlign;
       const dataLength = float32.length * bytesPerSample;
       const buffer = new ArrayBuffer(44 + dataLength);
       const view = new DataView(buffer);
-      let offset = 0;
-      function writeStr(s){ for (let i=0;i<s.length;i++) view.setUint8(offset++, s.charCodeAt(i)); }
-      function write16(v){ view.setUint16(offset, v, true); offset+=2; }
-      function write32(v){ view.setUint32(offset, v, true); offset+=4; }
-
-      writeStr('RIFF');           // ChunkID
-      write32(36 + dataLength);   // ChunkSize
-      writeStr('WAVE');           // Format
-      writeStr('fmt ');           // Subchunk1ID
-      write32(16);                // Subchunk1Size (PCM)
-      write16(1);                 // AudioFormat (PCM)
-      write16(numChannels);       // NumChannels
-      write32(sampleRate);        // SampleRate
-      write32(byteRate);          // ByteRate
-      write16(blockAlign);        // BlockAlign
-      write16(16);                // BitsPerSample
-      writeStr('data');           // Subchunk2ID
-      write32(dataLength);        // Subchunk2Size
-
-      // PCM write
-      let idx = 44;
+      let o = 0;
+      function wstr(s){ for (let i=0;i<s.length;i++) view.setUint8(o++, s.charCodeAt(i)); }
+      function w16(v){ view.setUint16(o, v, true); o+=2; }
+      function w32(v){ view.setUint32(o, v, true); o+=4; }
+      wstr('RIFF'); w32(36 + dataLength); wstr('WAVE'); wstr('fmt '); w32(16); w16(1);
+      w16(numChannels); w32(sampleRate); w32(byteRate); w16(blockAlign); w16(16);
+      wstr('data'); w32(dataLength);
       const out = new Int16Array(buffer, 44, float32.length);
-      for (let i=0;i<float32.length;i++){
-        let s = Math.max(-1, Math.min(1, float32[i]));
-        out[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
-      }
-
-      // base64
-      let binary = '';
-      const bytes = new Uint8Array(buffer);
-      for (let i=0; i<bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-      return btoa(binary);
+      for (let i=0;i<float32.length;i++){ let s = Math.max(-1, Math.min(1, float32[i])); out[i] = s<0 ? s*0x8000 : s*0x7FFF; }
+      let bin=''; const bytes = new Uint8Array(buffer); for (let i=0;i<bytes.length;i++) bin += String.fromCharCode(bytes[i]);
+      return btoa(bin);
     }
 
     function byId(id){ return document.getElementById(id); }
-    const pillMode   = byId('pillMode');
-    const vStatus    = byId('vStatus');
-    const vMic       = byId('vMic');
-    const vServer    = byId('vServer');
-    const btnStart   = byId('btnStart');
-    const btnStop    = byId('btnStop');
-    const overlay    = byId('overlay');
-    const overlayTmr = byId('overlayTimer');
+    const pillMode = byId('pillMode'), vStatus = byId('vStatus'), vMic = byId('vMic'), vServer = byId('vServer');
+    const btnStart = byId('btnStart'), btnStop = byId('btnStop');
+    const overlay  = byId('overlay'), overlayTmr = byId('overlayTimer');
 
     function setStatus(s){ vStatus.textContent = s; }
     function setMic(s){ vMic.textContent = s; }
     function setServer(s){ vServer.textContent = s; }
     function setMode(m){ pillMode.textContent = 'mode: ' + m; }
 
+    // Breathing overlay with 3-1-4 cadence
     function showOverlay(seconds = 60, pattern = [3, 1, 4]) {
-  const cueEl    = document.getElementById('breathCue');
-  const timerEl  = document.getElementById('overlayTimer');
-  const overlay  = document.getElementById('overlay');
-  const circle   = document.getElementById('breathCircle');
+      const cueEl   = byId('breathCue');
+      const timerEl = byId('overlayTimer');
+      const dotEl   = byId('breathDot');
 
-  overlay.classList.add('show');
+      overlay.classList.add('show');
 
-  // clear any previous timer if user retriggers quickly
-  if (window.__overlayTick) clearInterval(window.__overlayTick);
+      if (window.__overlayTick) clearInterval(window.__overlayTick);
 
-  // countdown
-  let remain = seconds;
-  if (timerEl) timerEl.textContent = remain + 's';
+      let remain = seconds;
+      if (timerEl) timerEl.textContent = remain + 's';
 
-  const phases = [
-    { label: 'Inhale', className: 'breath-in'  , len: pattern[0] ?? 3, targetScale: 1.28 },
-    { label: 'Hold'  , className: 'breath-hold', len: pattern[1] ?? 1, targetScale: 1.28 },
-    { label: 'Exhale', className: 'breath-out' , len: pattern[2] ?? 4, targetScale: 1.00 },
-  ];
+      const phases = [
+        { label: 'Inhale', className: 'breath-in'  , len: pattern[0] ?? 3, targetScale: 1.28 },
+        { label: 'Hold'  , className: 'breath-hold', len: pattern[1] ?? 1, targetScale: 1.28 },
+        { label: 'Exhale', className: 'breath-out' , len: pattern[2] ?? 4, targetScale: 1.00 },
+      ];
 
-  let phaseIdx  = 0;
-  let phaseLeft = phases[0].len;
+      let phaseIdx  = 0;
+      let phaseLeft = phases[0].len;
 
-  function applyPhase(i){
-    const p = phases[i];
-    if (cueEl) {
-      cueEl.textContent = p.label;
-      cueEl.classList.remove('breath-in','breath-hold','breath-out');
-      cueEl.classList.add(p.className);
-    }
-    if (circle) {
-      circle.style.transition = `transform ${p.len}s ease-in-out`;
-      circle.style.transform  = `scale(${p.targetScale})`;
-    }
-    phaseLeft = p.len;
-  }
+      function applyPhase(i){
+        const p = phases[i];
+        if (cueEl){
+          cueEl.textContent = p.label;
+          cueEl.classList.remove('breath-in','breath-hold','breath-out');
+          cueEl.classList.add(p.className);
+        }
+        if (dotEl){
+          dotEl.style.transition = `transform ${Math.max(p.len,0.5)}s ease-in-out`;
+          dotEl.style.transform  = `scale(${p.targetScale})`;
+        }
+        phaseLeft = p.len;
+      }
 
-  // start at inhale
-  applyPhase(0);
+      applyPhase(0);
 
-  window.__overlayTick = setInterval(() => {
-    remain -= 1;
-    if (timerEl) timerEl.textContent = Math.max(remain, 0) + 's';
+      window.__overlayTick = setInterval(() => {
+        remain -= 1;
+        if (timerEl) timerEl.textContent = Math.max(remain, 0) + 's';
 
-    // step the 3–1–4 cadence
-    phaseLeft -= 1;
-    if (phaseLeft <= 0) {
-      phaseIdx = (phaseIdx + 1) % phases.length;
-      applyPhase(phaseIdx);
-    }
+        phaseLeft -= 1;
+        if (phaseLeft <= 0) {
+          phaseIdx = (phaseIdx + 1) % phases.length;
+          applyPhase(phaseIdx);
+        }
 
-    // end of overlay
-    if (remain <= 0) {
-      clearInterval(window.__overlayTick);
-      overlay.classList.remove('show');
-    }
-  }, 1000);
-}
-    // Tap feedback (no pulsing)
-    function tapFeedback(el){
-      el.style.transform = 'scale(0.98)';
-      setTimeout(()=>{ el.style.transform = 'scale(1)'; }, 120);
+        if (remain <= 0) {
+          clearInterval(window.__overlayTick);
+          overlay.classList.remove('show');
+          // reset dot for next time
+          if (dotEl) {
+            dotEl.style.transition = 'transform 0.4s ease-in-out';
+            dotEl.style.transform  = 'scale(1.0)';
+          }
+        }
+      }, 1000);
     }
 
-    // --- WS wiring (kept same message formats) ---
+    function tapFeedback(el){ el.style.transform = 'scale(0.98)'; setTimeout(()=>{ el.style.transform = 'scale(1)'; }, 120); }
+
+    // --- WS wiring ---
     function connectWS(){
       if (ws && ws.readyState === WebSocket.OPEN) return;
       ws = new WebSocket(WS_URL);
       setServer('connecting');
-      ws.onopen = ()=> setServer('connected');
+      ws.onopen  = ()=> setServer('connected');
       ws.onerror = ()=> setServer('error');
-      
-      ws.onclose = () => {
-  setServer('closed');
-  // if user is still listening, try to reconnect after brief delay
-  if (vStatus.textContent === 'listening') {
-    setTimeout(() => { connectWS(); }, 1000);
-  }
-};
-  
+      ws.onclose = ()=> {
+        setServer('closed');
+        if (vStatus.textContent === 'listening') setTimeout(()=> connectWS(), 1000);
+      };
       ws.onmessage = (ev)=>{
         let msg; try{ msg = JSON.parse(ev.data); } catch { return; }
         if (msg.type === 'hello'){
           setMode(msg.mode || 'hume');
         } else if (msg.type === 'hume'){
           setServer(msg.status || '—');
-        } else if (msg.type === 'risk'){
-          // no on-screen hyper label anymore
         } else if (msg.type === 'trigger'){
-          if (msg.kind === 'hyper') {
-            showOverlay(20); // 20s exactly
-          }
+          if (msg.kind === 'hyper') showOverlay(20); // 20s overlay
         }
       };
     }
@@ -481,17 +435,14 @@
     async function start(){
       tapFeedback(btnStart);
       setStatus('starting…');
-
       connectWS();
 
-      // mic
       mediaStream = await navigator.mediaDevices.getUserMedia({ audio:true });
       setMic('on');
 
       audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 48000 });
       micSource = audioCtx.createMediaStreamSource(mediaStream);
 
-      // Use ScriptProcessorNode for wide support
       const BUFFER_SIZE = 4096;
       processor = audioCtx.createScriptProcessor(BUFFER_SIZE, 1, 1);
 
@@ -499,7 +450,6 @@
       let lastSent = performance.now();
       processor.onaudioprocess = (e)=>{
         const input = e.inputBuffer.getChannelData(0);
-        // copy into chunk
         const copy = new Float32Array(input.length);
         copy.set(input);
         chunk.push(copy);
@@ -508,91 +458,75 @@
         if (now - lastSent >= CHUNK_MS){
           const total = chunk.reduce((s,a)=>s+a.length,0);
           const joined = new Float32Array(total);
-          let o = 0;
-          for (const buf of chunk){ joined.set(buf, o); o += buf.length; }
+          let o = 0; for (const buf of chunk){ joined.set(buf, o); o += buf.length; }
           chunk.length = 0;
 
           const b64 = pcm16leToWavBase64(joined, audioCtx.sampleRate);
           if (ws && ws.readyState === WebSocket.OPEN){
-            try {
-              ws.send(JSON.stringify({ type:'audio', data_b64: b64 }));
-              // console.log('sent bytesB64=', b64.length);
-            } catch {}
+            try { ws.send(JSON.stringify({ type:'audio', data_b64: b64 })); } catch {}
           }
           lastSent = now;
         }
       };
 
       micSource.connect(processor);
-      processor.connect(audioCtx.destination); // required in some browsers
-
+      processor.connect(audioCtx.destination);
       setStatus('listening');
     }
 
     async function stop(){
       tapFeedback(btnStop);
       setStatus('stopping…');
-
       try { if (processor) processor.disconnect(); } catch {}
       try { if (micSource) micSource.disconnect(); } catch {}
       try { if (audioCtx) await audioCtx.close(); } catch {}
-
       try { if (mediaStream) mediaStream.getTracks().forEach(t=>t.stop()); } catch {}
       mediaStream = null; audioCtx = null; processor = null; micSource = null;
-
       setMic('off');
       setStatus('idle');
     }
 
     btnStart.addEventListener('click', start);
-    btnStop.addEventListener('click', stop);
+    btnStop .addEventListener('click', stop);
 
-    // Kick off a WS connection early so we can display mode / server status
+    // Bring up a WS early so pills show status
     connectWS();
   </script>
 
-<script>
-(() => {
-  if (window.__toastPatchApplied) return; // avoid double-inject on hot reloads
-  window.__toastPatchApplied = true;
+  <!-- Success toast patch (unchanged behavior) -->
+  <script>
+  (() => {
+    if (window.__toastPatchApplied) return;
+    window.__toastPatchApplied = true;
 
-  const overlay = document.getElementById('overlay');
-  const toast   = document.getElementById('successToast');
-  const btnRestart = document.getElementById('btnRestart');
+    const overlay = document.getElementById('overlay');
+    const toast   = document.getElementById('successToast');
+    const btnRestart = document.getElementById('btnRestart');
 
-  // safety helpers
-  const showToast = () => toast && toast.classList.add('show');
-  const hideToast = () => toast && toast.classList.remove('show');
+    const showToast = () => toast && toast.classList.add('show');
+    const hideToast = () => toast && toast.classList.remove('show');
 
-  // Hook the existing global showOverlay(seconds)
-  const origShowOverlay = window.showOverlay;
-  if (typeof origShowOverlay === 'function') {
-    window.showOverlay = function(seconds = 20) {
-      // Start a parallel timer so we can show the toast when the overlay completes
-      const endAt = Date.now() + seconds * 1000;
-      const tick = setInterval(() => {
-        if (Date.now() >= endAt) {
-          clearInterval(tick);
-          // ensure overlay is hidden, then show toast
-          try { overlay && overlay.classList.remove('show'); } catch {}
-          showToast();
-        }
-      }, 200);
+    const origShowOverlay = window.showOverlay;
+    if (typeof origShowOverlay === 'function') {
+      window.showOverlay = function(seconds = 20) {
+        const endAt = Date.now() + seconds * 1000;
+        const tick = setInterval(() => {
+          if (Date.now() >= endAt) {
+            clearInterval(tick);
+            try { overlay && overlay.classList.remove('show'); } catch {}
+            showToast();
+          }
+        }, 200);
+        return origShowOverlay.apply(this, arguments);
+      };
+    }
 
-      // run your original implementation (keeps the on-screen countdown you already have)
-      return origShowOverlay.apply(this, arguments);
-    };
-  } else {
-    console.warn('showOverlay() not found; toast patch skipped');
-  }
-
-  // Restart button: hide toast, then stop() + start() if available
-  btnRestart?.addEventListener('click', async () => {
-    hideToast();
-    try { if (typeof window.stop  === 'function') await window.stop(); } catch {}
-    try { if (typeof window.start === 'function') await window.start(); } catch {}
-  });
-})();
-</script>
+    btnRestart?.addEventListener('click', async () => {
+      hideToast();
+      try { if (typeof window.stop  === 'function') await window.stop(); } catch {}
+      try { if (typeof window.start === 'function') await window.start(); } catch {}
+    });
+  })();
+  </script>
 </body>
 </html>
