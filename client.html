@@ -129,12 +129,18 @@
       place-items: center;
       margin: 6px 0 10px;
     }
+
+    /* Breathing dot: always a perfect circle; starts small; viewport capped */
     .breath-dot{
-      width: clamp(140px, 34vh, 260px);
-      height: clamp(140px, 34vh, 260px);
-      max-width: 70%;   /* cap to 70% card width */
-      max-height: 70%;
+      --dot-size: min(34vh, 65vw);  /* same value used for width & height */
+      width: var(--dot-size);
+      height: var(--dot-size);
+      aspect-ratio: 1 / 1;
       border-radius: 50%;
+      justify-self: center;
+      align-self: center;
+      margin: 10px auto 14px;
+
       background: radial-gradient(circle at 50% 40%,
         rgba(255,255,255,0.40) 0%,
         rgba(255,255,255,0.22) 45%,
@@ -143,9 +149,12 @@
       box-shadow:
         0 14px 34px rgba(0,0,0,0.38),
         inset 0 0 34px rgba(255,255,255,0.16);
-      transform: scale(0.82);                  /* start small */
-      transition: transform 1s ease-in-out;    /* per-phase timing set in JS */
+
+      transform: scale(0.80);               /* start small */
+      transition: transform 1s ease-in-out; /* JS sets exact duration/ease per phase */
+      will-change: transform;
     }
+
     .breath-cue{
       position: absolute; inset: 0;
       display: grid; place-items: center;
@@ -286,42 +295,52 @@
       const dotEl   = byId('breathDot');
 
       overlay.classList.add('show');
-
       if (window.__overlayTick) clearInterval(window.__overlayTick);
 
       let remain = seconds;
       if (timerEl) timerEl.textContent = remain + 's';
 
-      const MIN_SCALE = 0.82;  // small
-      const MAX_SCALE = 1.00;  // big (capped visually by CSS max-size)
+      const MIN_SCALE = 0.80;  // small
+      const MAX_SCALE = 0.98;  // large (absolute size also capped by CSS)
 
       const phases = [
         { label: 'Inhale', className:'breath-in',   len: pattern[0] ?? 4, scale: MAX_SCALE, easing:'cubic-bezier(0.25,0.8,0.5,1)' },
         { label: 'Hold',   className:'breath-hold', len: pattern[1] ?? 4, scale: MAX_SCALE, easing:'linear' },
         { label: 'Exhale', className:'breath-out',  len: pattern[2] ?? 4, scale: MIN_SCALE, easing:'cubic-bezier(0.4,0,0.2,1)' },
-        { label: 'Hold',   className:'breath-hold', len: pattern[3] ?? 4, scale: MIN_SCALE, easing:'linear' },
+        { label: 'Hold',   className:'breath-hold', len: pattern[3] ?? 4, scale: MIN_SCALE, easing:'linear' }
       ];
 
       let phaseIdx  = 0;
       let phaseLeft = phases[0].len;
 
+      // ensure the dot starts small immediately (no transition on first paint)
+      if (dotEl) {
+        dotEl.style.transition = 'none';
+        dotEl.style.transform  = `scale(${MIN_SCALE})`;
+        void dotEl.offsetWidth; // force reflow so Safari commits this state
+      }
+      if (cueEl) {
+        cueEl.textContent = phases[0].label;
+        cueEl.className   = `breath-cue ${phases[0].className}`;
+      }
+
       function applyPhase(i){
         const p = phases[i];
-        if (cueEl){
+        if (cueEl) {
           cueEl.textContent = p.label;
-          cueEl.classList.remove('breath-in','breath-hold','breath-out');
-          cueEl.classList.add(p.className);
+          cueEl.className   = `breath-cue ${p.className}`;
         }
-        if (dotEl){
+        if (dotEl) {
           dotEl.style.transition = `transform ${Math.max(p.len,0.5)}s ${p.easing || 'ease-in-out'}`;
           dotEl.style.transform  = `scale(${p.scale})`;
         }
         phaseLeft = p.len;
       }
 
-      // start small, then inhale grows
-      if (dotEl) dotEl.style.transform = `scale(${MIN_SCALE})`;
-      applyPhase(0);
+      // kick first phase on next frame so the animation starts immediately
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => { applyPhase(0); });
+      });
 
       window.__overlayTick = setInterval(() => {
         remain -= 1;
@@ -336,7 +355,10 @@
         if (remain <= 0) {
           clearInterval(window.__overlayTick);
           overlay.classList.remove('show');
-          if (dotEl) { dotEl.style.transition = 'transform 0.4s ease'; dotEl.style.transform = `scale(${MIN_SCALE})`; }
+          if (dotEl) {
+            dotEl.style.transition = 'transform 0.4s ease';
+            dotEl.style.transform  = `scale(${MIN_SCALE})`;
+          }
         }
       }, 1000);
     }
