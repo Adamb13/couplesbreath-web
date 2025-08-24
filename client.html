@@ -41,9 +41,7 @@
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      max-width: 720px;
-      width: 100%;
-      margin: 0 auto;
+      max-width: 720px; width: 100%; margin: 0 auto;
     }
     .brand{ font-weight: 700; letter-spacing: 0.2px; }
     .pills{ display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
@@ -61,12 +59,8 @@
       border: 1px solid var(--border);
       border-radius: 16px;
       padding: 18px;
-      display: grid;
-      gap: 16px;
-      align-content: start;
-      max-width: 720px;
-      width: 100%;
-      margin: 0 auto;
+      display: grid; gap: 16px; align-content: start;
+      max-width: 720px; width: 100%; margin: 0 auto;
     }
     .hint{ color: var(--muted); font-size: 14px; }
 
@@ -82,10 +76,20 @@
       background: #1c1c21; cursor: pointer;
       transition: transform .06s ease, filter .06s ease, background .12s ease, border-color .12s ease;
       touch-action: manipulation;
+      position: relative;
     }
     button:active{ transform: scale(0.98); filter: brightness(0.96); }
     .btn-start{ background: var(--accent); border-color: #1e4fcc; }
     .btn-stop { background: var(--danger); border-color: #c73131; }
+
+    /* Loading spinner on buttons */
+    button[disabled].is-busy{ opacity: .85; }
+    button[disabled].is-busy::after{
+      content:""; position:absolute; right:14px; top:50%; width:14px; height:14px; margin-top:-7px;
+      border-radius:50%; border:2px solid rgba(255,255,255,0.6); border-top-color:transparent;
+      animation:spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
     .footer-spacer{ height: max(8px, env(safe-area-inset-bottom)); }
 
@@ -99,7 +103,7 @@
 
     .overlay-card{
       width: min(92vw, 560px);
-      background: #b91c1c;                /* baseline (overridden when .overlay.show) */
+      background: #b91c1c; /* baseline (overridden when .overlay.show) */
       color: #fff;
       border-radius: 20px;
       box-shadow: 0 20px 60px rgba(0,0,0,0.55);
@@ -107,12 +111,11 @@
       text-align: center;
       border: 2px solid #7f1d1d;
       max-height: 80vh;
-      display: grid;
-      justify-items: center;
+      display: grid; justify-items: center;
     }
 
     /* Calm teal/indigo gradient when overlay is visible */
-    .overlay.show .overlay-card {
+    .overlay.show .overlay-card{
       background: radial-gradient(120% 120% at 50% 30%, #0ea5a1 0%, #0f766e 35%, #2563eb 100%);
       border-color: rgba(255,255,255,0.18);
       box-shadow: 0 22px 60px rgba(0,0,0,0.55), inset 0 0 24px rgba(255,255,255,0.08);
@@ -123,24 +126,16 @@
 
     /* Dot + centered cue */
     .breath-wrap{
-      position: relative;
-      width: 100%;
-      display: grid;
-      place-items: center;
+      position: relative; width: 100%;
+      display: grid; place-items: center;
       margin: 6px 0 10px;
     }
-
-    /* Breathing dot: always a perfect circle; starts small; viewport capped */
     .breath-dot{
-      --dot-size: min(34vh, 65vw);  /* same value used for width & height */
-      width: var(--dot-size);
-      height: var(--dot-size);
-      aspect-ratio: 1 / 1;
+      --dot-size: min(34vh, 65vw);
+      width: var(--dot-size); height: var(--dot-size); aspect-ratio: 1 / 1;
       border-radius: 50%;
-      justify-self: center;
-      align-self: center;
+      justify-self: center; align-self: center;
       margin: 10px auto 14px;
-
       background: radial-gradient(circle at 50% 40%,
         rgba(255,255,255,0.40) 0%,
         rgba(255,255,255,0.22) 45%,
@@ -149,20 +144,16 @@
       box-shadow:
         0 14px 34px rgba(0,0,0,0.38),
         inset 0 0 34px rgba(255,255,255,0.16);
-
-      transform: scale(0.50);               /* start small */
-      transition: transform 1s ease-in-out; /* JS sets exact duration/ease per phase */
+      transform: scale(0.50);               /* baseline small */
+      transition: transform 1s ease-in-out; /* per-phase timing set in JS */
       will-change: transform;
     }
-
     .breath-cue{
       position: absolute; inset: 0;
       display: grid; place-items: center;
       font-size: clamp(18px, 4.2vw, 24px);
-      font-weight: 900;
-      letter-spacing: 0.2px;
-      color: #fff;
-      text-shadow: 0 2px 6px rgba(0,0,0,0.25);
+      font-weight: 900; letter-spacing: 0.2px;
+      color: #fff; text-shadow: 0 2px 6px rgba(0,0,0,0.25);
       pointer-events: none;
     }
     .breath-in    { color: #ffffff; }
@@ -197,6 +188,16 @@
       background: #232329; color: var(--text); font-weight: 700; font-size: 14px; cursor: pointer;
     }
     .toast .restart:active{ transform: scale(0.98); }
+
+    /* Live recording indicator dot */
+    .rec-dot{
+      display:inline-block; width:10px; height:10px; margin-left:6px;
+      border-radius:50%; background:#666; box-shadow:0 0 0 rgba(255,0,0,0);
+      transition: background .15s ease, box-shadow .15s ease, transform .15s ease;
+    }
+    .rec-hot{
+      background:#ef4444; box-shadow:0 0 10px rgba(239,68,68,0.55); transform: scale(1.1);
+    }
   </style>
 </head>
 <body>
@@ -209,6 +210,7 @@
         <div class="pill">status: <strong id="vStatus">idle</strong></div>
         <div class="pill">mic: <strong id="vMic">off</strong></div>
         <div class="pill">server: <strong id="vServer">—</strong></div>
+        <div class="pill">rec:<strong><span class="rec-dot" id="recDot"></span></strong></div>
       </div>
     </header>
 
@@ -252,6 +254,10 @@
   <!-- APP SCRIPT -->
   <script>
     // ---------- CONFIG ----------
+    // One-place knobs:
+    const OVERLAY_DURATION = 20;      // change to 60 later if you want
+    const BREATH_PATTERN   = [4,4,4,4]; // [inhale, hold1, exhale, hold2]
+
     const qs = new URLSearchParams(location.search);
     const WS_URL = qs.get('ws') || 'wss://pause-proxy.onrender.com/client';
 
@@ -281,15 +287,15 @@
     function byId(id){ return document.getElementById(id); }
     const pillMode = byId('pillMode'), vStatus = byId('vStatus'), vMic = byId('vMic'), vServer = byId('vServer');
     const btnStart = byId('btnStart'), btnStop = byId('btnStop');
-    const overlay  = byId('overlay'), overlayTmr = byId('overlayTimer');
+    const overlay  = byId('overlay'), overlayTmr = byId('overlayTimer'), recDot = byId('recDot');
 
     function setStatus(s){ vStatus.textContent = s; }
     function setMic(s){ vMic.textContent = s; }
     function setServer(s){ vServer.textContent = s; }
     function setMode(m){ pillMode.textContent = 'mode: ' + m; }
 
-    // Breathing overlay — 4-4-4-4 cadence (inhale, hold, exhale, hold)
-    function showOverlay(seconds = 60, pattern = [4, 4, 4, 4]) {
+    // Breathing overlay — 4-4-4-4 cadence
+    function showOverlay(seconds = OVERLAY_DURATION, pattern = BREATH_PATTERN) {
       const cueEl   = byId('breathCue');
       const timerEl = byId('overlayTimer');
       const dotEl   = byId('breathDot');
@@ -301,7 +307,7 @@
       if (timerEl) timerEl.textContent = remain + 's';
 
       const MIN_SCALE = 0.50;  // small
-      const MAX_SCALE = 0.98;  // large (absolute size also capped by CSS)
+      const MAX_SCALE = 0.98;  // large (absolute size capped by CSS)
 
       const phases = [
         { label: 'Inhale', className:'breath-in',   len: pattern[0] ?? 4, scale: MAX_SCALE, easing:'cubic-bezier(0.25,0.8,0.5,1)' },
@@ -355,10 +361,7 @@
         if (remain <= 0) {
           clearInterval(window.__overlayTick);
           overlay.classList.remove('show');
-          if (dotEl) {
-            dotEl.style.transition = 'transform 0.4s ease';
-            dotEl.style.transform  = `scale(${MIN_SCALE})`;
-          }
+          if (dotEl) { dotEl.style.transition = 'transform 0.4s ease'; dotEl.style.transform = `scale(${MIN_SCALE})`; }
         }
       }, 1000);
     }
@@ -383,7 +386,7 @@
         } else if (msg.type === 'hume'){
           setServer(msg.status || '—');
         } else if (msg.type === 'trigger'){
-          if (msg.kind === 'hyper') showOverlay(20); // 20-second overlay
+          if (msg.kind === 'hyper') showOverlay(OVERLAY_DURATION, BREATH_PATTERN);
         }
       };
     }
@@ -391,6 +394,12 @@
     async function start(){
       tapFeedback(btnStart);
       setStatus('starting…');
+
+      // button UX
+      btnStart.disabled = true;
+      btnStart.classList.add('is-busy');
+      btnStop.disabled  = true;
+
       connectWS();
 
       mediaStream = await navigator.mediaDevices.getUserMedia({ audio:true });
@@ -406,6 +415,16 @@
       let lastSent = performance.now();
       processor.onaudioprocess = (e)=>{
         const input = e.inputBuffer.getChannelData(0);
+
+        // live RMS indicator
+        let sum = 0;
+        for (let i=0;i<input.length;i++) sum += input[i]*input[i];
+        const rms = Math.sqrt(sum / input.length);
+        if (recDot) {
+          if (rms > 0.017) recDot.classList.add('rec-hot'); else recDot.classList.remove('rec-hot');
+        }
+
+        // accumulate to 1s WAV chunk
         const copy = new Float32Array(input.length);
         copy.set(input);
         chunk.push(copy);
@@ -427,18 +446,34 @@
 
       micSource.connect(processor);
       processor.connect(audioCtx.destination);
+
+      // button UX
+      btnStart.classList.remove('is-busy');
+      btnStop.disabled = false;
+
       setStatus('listening');
     }
 
     async function stop(){
       tapFeedback(btnStop);
       setStatus('stopping…');
+
+      // button UX
+      btnStop.disabled = true;
+      btnStop.classList.add('is-busy');
+
       try { if (processor) processor.disconnect(); } catch {}
       try { if (micSource) micSource.disconnect(); } catch {}
       try { if (audioCtx) await audioCtx.close(); } catch {}
       try { if (mediaStream) mediaStream.getTracks().forEach(t=>t.stop()); } catch {}
       mediaStream = null; audioCtx = null; processor = null; micSource = null;
-      setMic('off'); setStatus('idle');
+
+      setMic('off');
+      setStatus('idle');
+
+      // button UX
+      btnStop.classList.remove('is-busy');
+      btnStart.disabled = false;
     }
 
     btnStart.addEventListener('click', start);
@@ -463,7 +498,7 @@
 
     const origShowOverlay = window.showOverlay;
     if (typeof origShowOverlay === 'function') {
-      window.showOverlay = function(seconds = 20) {
+      window.showOverlay = function(seconds = OVERLAY_DURATION) {
         const endAt = Date.now() + seconds * 1000;
         const tick = setInterval(() => {
           if (Date.now() >= endAt) {
