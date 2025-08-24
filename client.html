@@ -370,7 +370,7 @@
 
     // WebSocket wiring
     function connectWS(){
-      if (ws && ws.readyState === WebSocket.OPEN) return;
+      if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) return;
       ws = new WebSocket(WS_URL);
       setServer('connecting');
       ws.onopen  = ()=> setServer('connected');
