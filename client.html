@@ -24,15 +24,13 @@
     .card{ background:var(--panel); border:1px solid var(--border); border-radius:16px; padding:18px;
       display:grid; gap:16px; align-content:start; max-width:720px; width:100%; margin:0 auto; }
     .hint{ color:var(--muted); font-size:14px; }
-    .controls{ display:grid; grid-template-columns:1fr 1fr; gap:12px; position:sticky; bottom:0;
+    .controls{ display:flex; justify-content:center; gap:16px; position:sticky; bottom:0;
       background:linear-gradient(180deg,rgba(11,11,12,0),rgba(11,11,12,0.6)); padding-top:6px; }
     button{ appearance:none; border:1px solid var(--border); border-radius:12px; padding:14px 16px;
       font-weight:700; font-size:16px; color:white; background:#1c1c21; cursor:pointer;
       transition:transform .06s ease,filter .06s ease,background .12s ease,border-color .12s ease;
-      touch-action:manipulation; position:relative; }
+      touch-action:manipulation; position:relative; display:inline-flex; align-items:center; justify-content:center; }
     button:active{ transform:scale(0.98); filter:brightness(0.96); }
-    .btn-start{ background:var(--accent); border-color:#1e4fcc; }
-    .btn-stop { background:var(--danger); border-color:#c73131; }
     button[disabled].is-busy{ opacity:.85; }
     button[disabled].is-busy::after{ content:""; position:absolute; right:14px; top:50%; width:14px; height:14px;
       margin-top:-7px; border-radius:50%; border:2px solid rgba(255,255,255,0.6); border-top-color:transparent;
@@ -43,6 +41,56 @@
       background:#666; box-shadow:0 0 0 rgba(255,0,0,0);
       transition:background .15s ease,box-shadow .15s ease,transform .15s ease; }
     .rec-hot{ background:#ef4444; box-shadow:0 0 10px rgba(239,68,68,0.55); transform:scale(1.1); }
+
+    /* ── Start / Stop button theming ── */
+    #btnStart{
+      background:rgba(94,209,191,0.12); border:1px solid rgba(94,209,191,0.3);
+      color:#5ED1BF; border-radius:14px; padding:14px 32px;
+      font-size:15px; font-weight:500; font-family:-apple-system,'SF Pro Display','Helvetica Neue',system-ui,sans-serif;
+      cursor:pointer;
+    }
+    #btnStart.btn-recording{
+      background:rgba(94,209,191,0.20); border:1px solid rgba(94,209,191,0.6);
+    }
+    #btnStop{
+      background:rgba(255,107,107,0.08); border:1px solid rgba(255,107,107,0.25);
+      color:#FF6B6B; border-radius:14px; padding:14px 32px;
+      font-size:15px; font-weight:500; font-family:-apple-system,'SF Pro Display','Helvetica Neue',system-ui,sans-serif;
+      cursor:pointer;
+    }
+
+    /* Pulsing dot inside Start button when recording */
+    @keyframes bPulseDot{ 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.3);opacity:0.5} }
+    .rec-pulse-dot{
+      display:inline-block; width:8px; height:8px; border-radius:50%;
+      background:#5ED1BF; margin-right:8px; flex-shrink:0;
+      animation:bPulseDot 1.5s ease-in-out infinite;
+    }
+
+    /* ── Recording status bar (below header) ── */
+    #recStatusBar{
+      max-width:720px; width:100%; margin:-4px auto 0;
+      padding:6px 16px; border-radius:8px;
+      font-size:13px; font-weight:500; letter-spacing:0.3px;
+      display:flex; align-items:center; justify-content:center; gap:6px;
+      transition:background .25s ease, color .25s ease;
+    }
+    #recStatusBar.rec-active{ background:rgba(94,209,191,0.10); color:#5ED1BF; }
+    #recStatusBar.rec-inactive{ background:transparent; color:#9aa0a6; }
+    @keyframes bStatusDot{ 0%,100%{opacity:1} 50%{opacity:0.35} }
+    .status-dot-active{ animation:bStatusDot 1.5s ease-in-out infinite; }
+
+    /* ── Pause shimmer ── */
+    @keyframes bShimmer{
+      0%,100%{ color:#E8F0F2; text-shadow:none; }
+      50%{ color:rgba(94,209,191,0.9); text-shadow:0 0 20px rgba(94,209,191,0.4); }
+    }
+    @keyframes bShimmerSub{
+      0%,100%{ opacity:0.6; }
+      50%{ opacity:1.0; }
+    }
+    .b-shimmer{ animation:bShimmer 2.5s ease-in-out infinite; }
+    .b-shimmer-sub{ animation:bShimmerSub 2.5s ease-in-out 0.4s infinite; }
   </style>
 </head>
 <body>
@@ -57,6 +105,7 @@
       <div class="pill">rec:<strong><span class="rec-dot" id="recDot"></span></strong></div>
     </div>
   </header>
+  <div id="recStatusBar" class="rec-inactive"><span class="status-dot">○</span> Not recording</div>
   <main class="card">
     <div class="hint">
       Tap <strong>Start</strong> to begin streaming audio. When hyperarousal is detected,
@@ -199,9 +248,11 @@ function buildBreathOverlay(){
   Object.assign(pg.style,{position:'absolute',inset:'0',display:'flex',flexDirection:'column',
     alignItems:'center',justifyContent:'flex-start',opacity:'0',pointerEvents:'none'});
   const pt=document.createElement('span');
+  pt.id='bPauseTitle';
   Object.assign(pt.style,{...B_TYPE.title,fontFamily:B_FONT,lineHeight:'30px'});
   pt.textContent="Let's pause";
   const ps=document.createElement('span');
+  ps.id='bPauseSubtitle';
   Object.assign(ps.style,{...B_TYPE.subtitle,fontFamily:B_FONT,marginTop:'6px',lineHeight:'20px'});
   ps.textContent="Take this moment together";
   pg.append(pt,ps);
@@ -355,10 +406,11 @@ function updatePetals(scale,rotation){
 function breathTick(now){
   if(!breathState.pauseStartTime) breathState.pauseStartTime=now;
   const te=(now-breathState.pauseStartTime)/1000; // totalElapsed
-  const PAUSE_DUR=3.0,XFADE_START=1.8,XFADE_LEN=1.2;
+  const PAUSE_DUR=7.0,XFADE_START=5.5,XFADE_LEN=1.2;
 
   const pg=byId('bPauseGrp'),bg2=byId('bBreathGrp');
   const ce=byId('bCount'),re=byId('bRemaining'),bl=byId('bPhaseLabel');
+  const bpt=byId('bPauseTitle'),bps=byId('bPauseSubtitle');
 
   // ── PAUSE PHASE ──────────────────────────────────────────────────────────
   if(te<PAUSE_DUR){
@@ -366,11 +418,17 @@ function breathTick(now){
     updatePetals(Math.max(0,Math.sin(te*1.2)*0.06),te*5);
 
     // Crossfade: pause text fades in, then out as breath text fades in
-    // Crossfade starts at 1.8 s, runs 1.2 s — finishes exactly at end of 3 s pause
+    // Crossfade starts at 5.5 s, runs 1.2 s — finishes exactly at end of 7 s pause
     let po,bo;
     if(te<XFADE_START){
       po=Math.min(1,te/0.7); bo=0;
+      // shimmer active while in pause and before crossfade
+      if(bpt && !bpt.classList.contains('b-shimmer')) bpt.classList.add('b-shimmer');
+      if(bps && !bps.classList.contains('b-shimmer-sub')) bps.classList.add('b-shimmer-sub');
     } else {
+      // crossfade beginning — remove shimmer
+      if(bpt) bpt.classList.remove('b-shimmer');
+      if(bps) bps.classList.remove('b-shimmer-sub');
       const cf=(te-XFADE_START)/XFADE_LEN;
       po=Math.max(0,1-cf*1.2); bo=Math.min(1,cf);
     }
@@ -381,6 +439,9 @@ function breathTick(now){
     breathState.animFrame=requestAnimationFrame(breathTick);
     return;
   }
+  // Ensure shimmer is off once we leave pause phase
+  if(bpt) bpt.classList.remove('b-shimmer');
+  if(bps) bps.classList.remove('b-shimmer-sub');
 
   // ── BREATHING PHASE ──────────────────────────────────────────────────────
   if(pg)  pg.style.opacity=0;
@@ -446,10 +507,15 @@ function showBreathDoneScreen(){
 // ─── hideBreathOverlay ───────────────────────────────────────────────────────
 function hideBreathOverlay(){
   if(breathState.animFrame){ cancelAnimationFrame(breathState.animFrame); breathState.animFrame=null; }
+  // Clean up shimmer classes in case overlay is closed mid-pause
+  const bpt=byId('bPauseTitle'),bps=byId('bPauseSubtitle');
+  if(bpt) bpt.classList.remove('b-shimmer');
+  if(bps) bps.classList.remove('b-shimmer-sub');
   const ov=byId('breathOverlay');
   if(ov) ov.style.display='none';
   breathState.pauseStartTime=null;
   breathState.breathStartTime=null;
+  updateRecordingUI(); // refresh status bar immediately after overlay closes
 }
 
 // ─── showOverlay ─────────────────────────────────────────────────────────────
@@ -483,6 +549,32 @@ function showOverlay(seconds=OVERLAY_DURATION,pattern=BREATH_PATTERN){
   updatePetals(0,0);
 
   breathState.animFrame=requestAnimationFrame(breathTick);
+}
+
+// ─── Recording state ─────────────────────────────────────────────────────────
+let isRecording = false;
+
+function updateRecordingUI(){
+  const sb = byId('recStatusBar');
+  if(isRecording){
+    // Start button: pulsing dot + "Recording…"
+    btnStart.classList.add('btn-recording');
+    btnStart.innerHTML = '<span class="rec-pulse-dot"></span>Recording\u2026';
+    // Status bar
+    if(sb){
+      sb.className = 'rec-active';
+      sb.innerHTML = '<span class="status-dot-active" style="font-size:10px;">●</span> Recording active';
+    }
+  } else {
+    // Start button: plain
+    btnStart.classList.remove('btn-recording');
+    btnStart.textContent = 'Start';
+    // Status bar
+    if(sb){
+      sb.className = 'rec-inactive';
+      sb.innerHTML = '<span style="font-size:10px;">○</span> Not recording';
+    }
+  }
 }
 
 // ─── tapFeedback (unchanged) ─────────────────────────────────────────────────
@@ -557,6 +649,7 @@ async function start(){
   btnStart.classList.remove('is-busy');
   btnStop.disabled=false;
   setStatus('listening');
+  isRecording=true; updateRecordingUI();
 }
 
 // ─── stop (unchanged) ────────────────────────────────────────────────────────
@@ -572,6 +665,7 @@ async function stop(){
   setMic('off'); setStatus('idle');
   btnStop.classList.remove('is-busy');
   btnStart.disabled=false;
+  isRecording=false; updateRecordingUI();
 }
 
 btnStart.addEventListener('click',start);
@@ -579,6 +673,7 @@ btnStop .addEventListener('click',stop);
 
 // ─── INIT ────────────────────────────────────────────────────────────────────
 buildBreathOverlay();
+updateRecordingUI(); // set initial button + status bar state
 connectWS();
 
 // ═══════════════════════════════════════════════════════════════════════════════
