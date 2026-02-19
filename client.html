@@ -2,521 +2,624 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover"
-  />
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover" />
   <title>Couples Breath</title>
   <style>
     :root{
-      --bg: #0b0b0c;
-      --panel: #141417;
-      --text: #eaeaea;
-      --muted: #9aa0a6;
-      --accent: #2563eb; /* Start (blue) */
-      --danger: #ef4444; /* Stop (red) */
-      --border: #2a2a2e;
+      --bg:#0b0b0c; --panel:#141417; --text:#eaeaea; --muted:#9aa0a6;
+      --accent:#2563eb; --danger:#ef4444; --border:#2a2a2e;
     }
-    *{ box-sizing: border-box; }
-    html, body{
-      height: 100%;
-      margin: 0;
-      background: var(--bg);
-      color: var(--text);
-      font: 16px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, Apple Color Emoji, Segoe UI Emoji;
-    }
-
-    .page{
-      min-height: 100%;
-      display: grid;
-      grid-template-rows: auto 1fr auto;
-      padding: 16px;
-      padding-bottom: max(16px, env(safe-area-inset-bottom));
-      gap: 16px;
-    }
-
-    /* Header */
-    .header{
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      max-width: 720px; width: 100%; margin: 0 auto;
-    }
-    .brand{ font-weight: 700; letter-spacing: 0.2px; }
-    .pills{ display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
-    .pill{
-      display: inline-flex; align-items: center; gap: 8px;
-      padding: 6px 10px; border-radius: 999px;
-      background: #1b1b1f; border: 1px solid var(--border);
-      color: var(--muted); font-size: 13px; white-space: nowrap;
-    }
-    .pill strong{ color: var(--text); font-weight: 600; }
-
-    /* Body card */
-    .card{
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 18px;
-      display: grid; gap: 16px; align-content: start;
-      max-width: 720px; width: 100%; margin: 0 auto;
-    }
-    .hint{ color: var(--muted); font-size: 14px; }
-
-    .controls{
-      display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
-      position: sticky; bottom: 0;
-      background: linear-gradient(180deg, rgba(11,11,12,0), rgba(11,11,12,0.6));
-      padding-top: 6px;
-    }
-    button{
-      appearance: none; border: 1px solid var(--border); border-radius: 12px;
-      padding: 14px 16px; font-weight: 700; font-size: 16px; color: white;
-      background: #1c1c21; cursor: pointer;
-      transition: transform .06s ease, filter .06s ease, background .12s ease, border-color .12s ease;
-      touch-action: manipulation;
-      position: relative;
-    }
-    button:active{ transform: scale(0.98); filter: brightness(0.96); }
-    .btn-start{ background: var(--accent); border-color: #1e4fcc; }
-    .btn-stop { background: var(--danger); border-color: #c73131; }
-
-    /* Loading spinner on buttons */
-    button[disabled].is-busy{ opacity: .85; }
-    button[disabled].is-busy::after{
-      content:""; position:absolute; right:14px; top:50%; width:14px; height:14px; margin-top:-7px;
-      border-radius:50%; border:2px solid rgba(255,255,255,0.6); border-top-color:transparent;
-      animation:spin .8s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    .footer-spacer{ height: max(8px, env(safe-area-inset-bottom)); }
-
-    /* Overlay base */
-    .overlay{
-      position: fixed; inset: 0;
-      display: none; align-items: center; justify-content: center;
-      padding: 20px; background: rgba(0,0,0,0.45); z-index: 50;
-    }
-    .overlay.show{ display: flex; }
-
-    .overlay-card{
-      width: min(92vw, 560px);
-      background: #b91c1c; /* baseline (overridden when .overlay.show) */
-      color: #fff;
-      border-radius: 20px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.55);
-      padding: 28px 22px;
-      text-align: center;
-      border: 2px solid #7f1d1d;
-      max-height: 80vh;
-      display: grid; justify-items: center;
-    }
-
-    /* Calm teal/indigo gradient when overlay is visible */
-    .overlay.show .overlay-card{
-      background: radial-gradient(120% 120% at 50% 30%, #0ea5a1 0%, #0f766e 35%, #2563eb 100%);
-      border-color: rgba(255,255,255,0.18);
-      box-shadow: 0 22px 60px rgba(0,0,0,0.55), inset 0 0 24px rgba(255,255,255,0.08);
-    }
-
-    .overlay-title{ font-size: clamp(22px, 4.5vw, 28px); font-weight: 900; letter-spacing: 0.3px; margin: 0 0 8px; }
-    .overlay-sub{ font-size: clamp(14px, 3.4vw, 18px); line-height: 1.35; opacity: 0.98; margin: 0 0 12px; font-weight: 600; }
-
-    /* Dot + centered cue */
-    .breath-wrap{
-      position: relative; width: 100%;
-      display: grid; place-items: center;
-      margin: 6px 0 10px;
-    }
-    .breath-dot{
-      --dot-size: min(34vh, 65vw);
-      width: var(--dot-size); height: var(--dot-size); aspect-ratio: 1 / 1;
-      border-radius: 50%;
-      justify-self: center; align-self: center;
-      margin: 10px auto 14px;
-      background: radial-gradient(circle at 50% 40%,
-        rgba(255,255,255,0.40) 0%,
-        rgba(255,255,255,0.22) 45%,
-        rgba(255,255,255,0.10) 70%,
-        rgba(255,255,255,0.06) 100%);
-      box-shadow:
-        0 14px 34px rgba(0,0,0,0.38),
-        inset 0 0 34px rgba(255,255,255,0.16);
-      transform: scale(0.50);               /* baseline small */
-      transition: transform 1s ease-in-out; /* per-phase timing set in JS */
-      will-change: transform;
-    }
-    .breath-cue{
-      position: absolute; inset: 0;
-      display: grid; place-items: center;
-      font-size: clamp(18px, 4.2vw, 24px);
-      font-weight: 900; letter-spacing: 0.2px;
-      color: #fff; text-shadow: 0 2px 6px rgba(0,0,0,0.25);
-      pointer-events: none;
-    }
-    .breath-in    { color: #ffffff; }
-    .breath-hold  { color: #ffe9b3; }
-    .breath-out   { color: #ffd0d0; }
-
-    .overlay-timer{
-      display: inline-flex; align-items: center; justify-content: center;
-      min-width: 80px; padding: 10px 14px; border-radius: 999px;
-      background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.35);
-      font-weight: 800; font-size: 18px;
-    }
-
-    /* Success toast */
-    .toast{
-      position: fixed; inset: 0;
-      display: none; align-items: center; justify-content: center;
-      padding: 20px; background: rgba(0,0,0,0.45); z-index: 60; pointer-events: none;
-    }
-    .toast.show{ display: flex; }
-    .toast-card{
-      pointer-events: auto;
-      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
-      width: min(92vw, 520px); min-height: 32vh;
-      background: #1b1b1f; border: 1px solid var(--border); color: var(--text);
-      padding: 32px 22px; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.55);
-      text-align: center; transform: translateY(8vh);
-    }
-    .toast .msg{ font-weight: 800; line-height: 1.4; font-size: 18px; text-align: center; }
-    .toast .restart{
-      padding: 10px 12px; border-radius: 12px; border: 1px solid var(--border);
-      background: #232329; color: var(--text); font-weight: 700; font-size: 14px; cursor: pointer;
-    }
-    .toast .restart:active{ transform: scale(0.98); }
-
-    /* Live recording indicator dot */
-    .rec-dot{
-      display:inline-block; width:10px; height:10px; margin-left:6px;
-      border-radius:50%; background:#666; box-shadow:0 0 0 rgba(255,0,0,0);
-      transition: background .15s ease, box-shadow .15s ease, transform .15s ease;
-    }
-    .rec-hot{
-      background:#ef4444; box-shadow:0 0 10px rgba(239,68,68,0.55); transform: scale(1.1);
-    }
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; margin:0; background:var(--bg); color:var(--text);
+      font:16px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,Apple Color Emoji,Segoe UI Emoji; }
+    .page{ min-height:100%; display:grid; grid-template-rows:auto 1fr auto;
+      padding:16px; padding-bottom:max(16px,env(safe-area-inset-bottom)); gap:16px; }
+    .header{ display:flex; align-items:center; justify-content:space-between; gap:12px;
+      max-width:720px; width:100%; margin:0 auto; }
+    .brand{ font-weight:700; letter-spacing:0.2px; }
+    .pills{ display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+    .pill{ display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px;
+      background:#1b1b1f; border:1px solid var(--border); color:var(--muted); font-size:13px; white-space:nowrap; }
+    .pill strong{ color:var(--text); font-weight:600; }
+    .card{ background:var(--panel); border:1px solid var(--border); border-radius:16px; padding:18px;
+      display:grid; gap:16px; align-content:start; max-width:720px; width:100%; margin:0 auto; }
+    .hint{ color:var(--muted); font-size:14px; }
+    .controls{ display:grid; grid-template-columns:1fr 1fr; gap:12px; position:sticky; bottom:0;
+      background:linear-gradient(180deg,rgba(11,11,12,0),rgba(11,11,12,0.6)); padding-top:6px; }
+    button{ appearance:none; border:1px solid var(--border); border-radius:12px; padding:14px 16px;
+      font-weight:700; font-size:16px; color:white; background:#1c1c21; cursor:pointer;
+      transition:transform .06s ease,filter .06s ease,background .12s ease,border-color .12s ease;
+      touch-action:manipulation; position:relative; }
+    button:active{ transform:scale(0.98); filter:brightness(0.96); }
+    .btn-start{ background:var(--accent); border-color:#1e4fcc; }
+    .btn-stop { background:var(--danger); border-color:#c73131; }
+    button[disabled].is-busy{ opacity:.85; }
+    button[disabled].is-busy::after{ content:""; position:absolute; right:14px; top:50%; width:14px; height:14px;
+      margin-top:-7px; border-radius:50%; border:2px solid rgba(255,255,255,0.6); border-top-color:transparent;
+      animation:spin .8s linear infinite; }
+    @keyframes spin{ to{ transform:rotate(360deg); } }
+    .footer-spacer{ height:max(8px,env(safe-area-inset-bottom)); }
+    .rec-dot{ display:inline-block; width:10px; height:10px; margin-left:6px; border-radius:50%;
+      background:#666; box-shadow:0 0 0 rgba(255,0,0,0);
+      transition:background .15s ease,box-shadow .15s ease,transform .15s ease; }
+    .rec-hot{ background:#ef4444; box-shadow:0 0 10px rgba(239,68,68,0.55); transform:scale(1.1); }
   </style>
 </head>
 <body>
-  <div class="page">
-    <!-- HEADER -->
-    <header class="header">
-      <div class="brand">Couples Breath</div>
-      <div class="pills">
-        <div class="pill"><strong id="pillMode">mode: —</strong></div>
-        <div class="pill">status: <strong id="vStatus">idle</strong></div>
-        <div class="pill">mic: <strong id="vMic">off</strong></div>
-        <div class="pill">server: <strong id="vServer">—</strong></div>
-        <div class="pill">rec:<strong><span class="rec-dot" id="recDot"></span></strong></div>
-      </div>
-    </header>
-
-    <!-- MAIN -->
-    <main class="card">
-      <div class="hint">
-        Tap <strong>Start</strong> to begin streaming audio. When hyperarousal is detected,
-        you’ll see <em>Pause and Breathe</em>.
-      </div>
-
-      <div class="controls">
-        <button id="btnStart" class="btn-start" type="button">Start</button>
-        <button id="btnStop"  class="btn-stop"  type="button">Stop</button>
-      </div>
-    </main>
-
-    <div class="footer-spacer"></div>
-  </div>
-
-  <!-- OVERLAY -->
-  <div id="overlay" class="overlay" aria-hidden="true">
-    <div class="overlay-card" role="dialog" aria-live="assertive" aria-label="Pause and Breathe">
-      <h2 class="overlay-title">Pause and Breathe</h2>
-      <p class="overlay-sub">Deep Breath, Hold, Slow Exhale, Repeat</p>
-      <div class="breath-wrap">
-        <div id="breathDot" class="breath-dot" aria-hidden="true"></div>
-        <div id="breathCue" class="breath-cue">Inhale</div>
-      </div>
-      <div id="overlayTimer" class="overlay-timer">20s</div>
+<div class="page">
+  <header class="header">
+    <div class="brand">Couples Breath</div>
+    <div class="pills">
+      <div class="pill"><strong id="pillMode">mode: —</strong></div>
+      <div class="pill">status: <strong id="vStatus">idle</strong></div>
+      <div class="pill">mic: <strong id="vMic">off</strong></div>
+      <div class="pill">server: <strong id="vServer">—</strong></div>
+      <div class="pill">rec:<strong><span class="rec-dot" id="recDot"></span></strong></div>
     </div>
-  </div>
-
-  <!-- SUCCESS TOAST -->
-  <div id="successToast" class="toast" aria-live="polite">
-    <div class="toast-card">
-      <span class="msg">Great Work Slowing Down Together! ❤️</span>
-      <button id="btnRestart" class="restart" type="button">Restart</button>
+  </header>
+  <main class="card">
+    <div class="hint">
+      Tap <strong>Start</strong> to begin streaming audio. When hyperarousal is detected,
+      you'll see <em>Pause and Breathe</em>.
     </div>
-  </div>
+    <div class="controls">
+      <button id="btnStart" class="btn-start" type="button">Start</button>
+      <button id="btnStop"  class="btn-stop"  type="button">Stop</button>
+    </div>
+  </main>
+  <div class="footer-spacer"></div>
+</div>
 
-  <!-- APP SCRIPT -->
-  <script>
-    // ---------- CONFIG ----------
-    // One-place knobs:
-    const OVERLAY_DURATION = 20;      // change to 60 later if you want
-    const BREATH_PATTERN   = [4,4,4,4]; // [inhale, hold1, exhale, hold2]
+<!-- Breath overlay built by buildBreathOverlay() at startup -->
 
-    const qs = new URLSearchParams(location.search);
-    const WS_URL = qs.get('ws') || 'wss://pause-proxy.onrender.com/client';
+<script>
+// ─── CONFIG ──────────────────────────────────────────────────────────────────
+const OVERLAY_DURATION = 20;
+const BREATH_PATTERN   = [4,4,4,4]; // [inhale, hold1, exhale, hold2]
+const qs     = new URLSearchParams(location.search);
+const WS_URL = qs.get('ws') || 'wss://pause-proxy.onrender.com/client';
+const DEBUG  = qs.has('debug');
+const CHUNK_MS = 1000;
+let mediaStream, audioCtx, processor, micSource, ws;
 
-    const CHUNK_MS = 1000;
-    let mediaStream, audioCtx, processor, micSource, ws;
+// ─── WAV ENCODER (untouched) ─────────────────────────────────────────────────
+function pcm16leToWavBase64(float32, sampleRate){
+  const numChannels=1,bytesPerSample=2,blockAlign=numChannels*bytesPerSample;
+  const byteRate=sampleRate*blockAlign,dataLength=float32.length*bytesPerSample;
+  const buffer=new ArrayBuffer(44+dataLength),view=new DataView(buffer);
+  let o=0;
+  function wstr(s){for(let i=0;i<s.length;i++)view.setUint8(o++,s.charCodeAt(i));}
+  function w16(v){view.setUint16(o,v,true);o+=2;}
+  function w32(v){view.setUint32(o,v,true);o+=4;}
+  wstr('RIFF');w32(36+dataLength);wstr('WAVE');wstr('fmt ');w32(16);w16(1);
+  w16(numChannels);w32(sampleRate);w32(byteRate);w16(blockAlign);w16(16);
+  wstr('data');w32(dataLength);
+  const out=new Int16Array(buffer,44,float32.length);
+  for(let i=0;i<float32.length;i++){let s=Math.max(-1,Math.min(1,float32[i]));out[i]=s<0?s*0x8000:s*0x7FFF;}
+  let bin='';const bytes=new Uint8Array(buffer);for(let i=0;i<bytes.length;i++)bin+=String.fromCharCode(bytes[i]);
+  return btoa(bin);
+}
 
-    // WAV encoder
-    function pcm16leToWavBase64(float32, sampleRate){
-      const numChannels = 1, bytesPerSample = 2, blockAlign = numChannels * bytesPerSample;
-      const byteRate = sampleRate * blockAlign;
-      const dataLength = float32.length * bytesPerSample;
-      const buffer = new ArrayBuffer(44 + dataLength);
-      const view = new DataView(buffer);
-      let o = 0;
-      function wstr(s){ for (let i=0;i<s.length;i++) view.setUint8(o++, s.charCodeAt(i)); }
-      function w16(v){ view.setUint16(o, v, true); o+=2; }
-      function w32(v){ view.setUint32(o, v, true); o+=4; }
-      wstr('RIFF'); w32(36 + dataLength); wstr('WAVE'); wstr('fmt '); w32(16); w16(1);
-      w16(numChannels); w32(sampleRate); w32(byteRate); w16(blockAlign); w16(16);
-      wstr('data'); w32(dataLength);
-      const out = new Int16Array(buffer, 44, float32.length);
-      for (let i=0;i<float32.length;i++){ let s = Math.max(-1, Math.min(1, float32[i])); out[i] = s<0 ? s*0x8000 : s*0x7FFF; }
-      let bin=''; const bytes = new Uint8Array(buffer); for (let i=0;i<bytes.length;i++) bin += String.fromCharCode(bytes[i]);
-      return btoa(bin);
+// ─── DEBUG STATE ─────────────────────────────────────────────────────────────
+// Written by WS handlers below; read by the debug panel (if DEBUG).
+const debugState = {
+  hyperScore:     0,
+  humeStatus:     'disconnected',
+  lastResponseAt: null,
+};
+
+// ─── DOM HELPERS ─────────────────────────────────────────────────────────────
+function byId(id){ return document.getElementById(id); }
+const pillMode=byId('pillMode'),vStatus=byId('vStatus'),vMic=byId('vMic'),vServer=byId('vServer');
+const btnStart=byId('btnStart'),btnStop=byId('btnStop'),recDot=byId('recDot');
+function setStatus(s){ vStatus.textContent=s; }
+function setMic(s)   { vMic.textContent=s; }
+function setServer(s){ vServer.textContent=s; }
+function setMode(m)  { pillMode.textContent='mode: '+m; }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  BREATH-V9 — vanilla JS port
+//  Ported from breath-v9.jsx. No React, no build step, pure DOM + rAF.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// Typography tokens (match breath-v9 exactly)
+const B_FONT = "-apple-system,'SF Pro Display','Helvetica Neue',system-ui,sans-serif";
+const B_BG   = "linear-gradient(170deg,#1B2838 0%,#1E3141 30%,#1A2C3D 60%,#162231 100%)";
+const B_TYPE = {
+  title:    {fontSize:'26px',fontWeight:'500',color:'#E8F0F2',letterSpacing:'0.5px'},
+  subtitle: {fontSize:'16px',fontWeight:'400',color:'#93B8CA'},
+  count:    {fontSize:'48px',fontWeight:'200',color:'rgba(225,238,242,0.55)'},
+  meta:     {fontSize:'13px',fontWeight:'400',color:'#5A8A9E',letterSpacing:'1.5px'},
+};
+
+// All named patterns (kept for completeness; showOverlay maps the legacy array to a pattern object)
+const B_PATTERNS = {
+  "4-4-6":   {inhale:4,hold1:4,exhale:6,hold2:0},
+  "4-4-4-4": {inhale:4,hold1:4,exhale:4,hold2:4},
+  "4-7-8":   {inhale:4,hold1:7,exhale:8,hold2:0},
+};
+const B_PHASES      = ["inhale","hold1","exhale","hold2"];
+const B_PHASE_LABELS= {inhale:"Inhale",hold1:"Hold",exhale:"Exhale",hold2:"Hold"};
+const B_COMPLETION  = [
+  "You reset, together",
+  "Back in sync",
+  "Beautiful reset",
+  "You slowed down, together",
+];
+
+// Petal constants
+const PETAL_COUNT      = 6;
+const PETAL_COLORS     = [
+  "rgba(94,209,191,0.50)","rgba(72,191,227,0.45)","rgba(129,212,172,0.45)",
+  "rgba(94,209,191,0.40)","rgba(72,191,227,0.40)","rgba(129,212,172,0.45)",
+];
+const PETAL_MIN_SPREAD = 0.22;   // petals never fully collapse
+const PETAL_MAX_SPREAD = 1.0;
+const PETAL_MIN_SCALE  = 0.7;
+const PETAL_MAX_SCALE  = 1.0;
+
+// Mutable breath state
+const breathState = {
+  animFrame:       null,
+  pauseStartTime:  null,   // set on first rAF tick (latch pattern)
+  breathStartTime: null,   // set when pause phase ends
+  duration:        OVERLAY_DURATION,
+  pattern:         {inhale:4,hold1:4,exhale:4,hold2:4},
+  completionCount: 0,
+};
+
+// ─── buildBreathOverlay ───────────────────────────────────────────────────────
+// Constructs full overlay DOM and appends it to <body>. Called once at startup.
+function buildBreathOverlay(){
+  // Keyframe for done-screen entrance
+  const kf=document.createElement('style');
+  kf.textContent='@keyframes bSoftIn{0%{opacity:0;transform:translateY(8px)}100%{opacity:1;transform:translateY(0)}}';
+  document.head.appendChild(kf);
+
+  // Root: position:fixed; inset:0; hidden by default
+  const ov=document.createElement('div');
+  ov.id='breathOverlay';
+  Object.assign(ov.style,{position:'fixed',inset:'0',zIndex:'50',display:'none',background:B_BG,fontFamily:B_FONT});
+
+  // ── ACTIVE SCREEN (pause → breathing) ──────────────────────────────────────
+  const active=document.createElement('div');
+  active.id='bActiveScreen';
+  Object.assign(active.style,{position:'absolute',inset:'0',display:'flex',
+    flexDirection:'column',alignItems:'center',justifyContent:'center'});
+
+  // Text zone: fixed 56px — title(30px) + 6px gap + subtitle(20px)
+  // Both pause & breathing text are stacked here with absolute positioning.
+  // Layout height is constant; only opacity changes.
+  const tz=document.createElement('div');
+  Object.assign(tz.style,{position:'relative',width:'300px',height:'56px',marginBottom:'2px'});
+
+  // — Pause text group —
+  const pg=document.createElement('div');
+  pg.id='bPauseGrp';
+  Object.assign(pg.style,{position:'absolute',inset:'0',display:'flex',flexDirection:'column',
+    alignItems:'center',justifyContent:'flex-start',opacity:'0',pointerEvents:'none'});
+  const pt=document.createElement('span');
+  Object.assign(pt.style,{...B_TYPE.title,fontFamily:B_FONT,lineHeight:'30px'});
+  pt.textContent="Let's pause";
+  const ps=document.createElement('span');
+  Object.assign(ps.style,{...B_TYPE.subtitle,fontFamily:B_FONT,marginTop:'6px',lineHeight:'20px'});
+  ps.textContent="Take this moment together";
+  pg.append(pt,ps);
+
+  // — Breathing text group —
+  const bg2=document.createElement('div');
+  bg2.id='bBreathGrp';
+  Object.assign(bg2.style,{position:'absolute',inset:'0',display:'flex',flexDirection:'column',
+    alignItems:'center',justifyContent:'flex-start',opacity:'0',pointerEvents:'none'});
+  const bl=document.createElement('span');
+  bl.id='bPhaseLabel';
+  Object.assign(bl.style,{...B_TYPE.title,fontFamily:B_FONT,lineHeight:'30px'});
+  bl.textContent='Inhale';
+  // Invisible spacer holds subtitle-row height — remaining timer never causes layout shift
+  const bsp=document.createElement('span');
+  Object.assign(bsp.style,{...B_TYPE.subtitle,fontFamily:B_FONT,marginTop:'6px',lineHeight:'20px',opacity:'0'});
+  bsp.innerHTML='&nbsp;';
+  bg2.append(bl,bsp);
+  tz.append(pg,bg2);
+
+  // Petals area 220×220
+  const pa=document.createElement('div');
+  Object.assign(pa.style,{position:'relative',width:'220px',height:'220px',display:'flex',
+    alignItems:'center',justifyContent:'center'});
+
+  const pr=document.createElement('div');
+  pr.id='bPetalsRoot';
+  Object.assign(pr.style,{position:'relative',width:'220px',height:'220px'});
+
+  const glow=document.createElement('div');
+  glow.id='bGlow';
+  Object.assign(glow.style,{position:'absolute',inset:'-30px',borderRadius:'50%',
+    background:'radial-gradient(circle,rgba(94,209,191,0.08) 0%,transparent 65%)',
+    filter:'blur(30px)',pointerEvents:'none'});
+  pr.appendChild(glow);
+
+  const PPX=220*0.42; // petal pixel size
+  for(let i=0;i<PETAL_COUNT;i++){
+    const p=document.createElement('div');
+    p.id='bPetal'+i;
+    Object.assign(p.style,{position:'absolute',width:PPX+'px',height:PPX+'px',borderRadius:'50%',
+      background:PETAL_COLORS[i],left:'50%',top:'50%',
+      marginLeft:(-PPX/2)+'px',marginTop:(-PPX/2)+'px',filter:'blur(1px)'});
+    pr.appendChild(p);
+  }
+  pa.appendChild(pr);
+
+  // Count (large numeral centred on petals)
+  const ce=document.createElement('div');
+  ce.id='bCount';
+  Object.assign(ce.style,{position:'absolute',inset:'0',display:'flex',alignItems:'center',
+    justifyContent:'center',zIndex:'2',opacity:'0',
+    ...B_TYPE.count,fontVariantNumeric:'tabular-nums',fontFamily:B_FONT});
+  ce.textContent='1';
+  pa.appendChild(ce);
+
+  // Remaining timer — always reserves 18px height (opacity drives visibility)
+  const re=document.createElement('div');
+  re.id='bRemaining';
+  Object.assign(re.style,{marginTop:'14px',height:'18px',...B_TYPE.meta,fontFamily:B_FONT,
+    opacity:'0',fontVariantNumeric:'tabular-nums',display:'flex',alignItems:'center',justifyContent:'center'});
+  re.textContent='\u00A0';
+
+  // End button
+  const ew=document.createElement('div');
+  Object.assign(ew.style,{position:'absolute',bottom:'8%',left:'0',right:'0',textAlign:'center'});
+  const eb=document.createElement('button');
+  eb.textContent='End';
+  Object.assign(eb.style,{padding:'12px 36px',borderRadius:'999px',
+    border:'1px solid rgba(94,209,191,0.15)',background:'rgba(94,209,191,0.08)',
+    color:'#7FA8BE',fontSize:'14px',fontWeight:'500',cursor:'pointer',
+    letterSpacing:'1px',fontFamily:B_FONT});
+  eb.addEventListener('click',hideBreathOverlay);
+  ew.appendChild(eb);
+
+  active.append(tz,pa,re,ew);
+
+  // ── DONE SCREEN ────────────────────────────────────────────────────────────
+  const done=document.createElement('div');
+  done.id='bDoneScreen';
+  Object.assign(done.style,{position:'absolute',inset:'0',display:'none',
+    flexDirection:'column',alignItems:'center',justifyContent:'center'});
+
+  // Static petal cluster (scale=0.4, rotation=30, size=200) — idle-card treatment
+  const dpw=document.createElement('div');
+  Object.assign(dpw.style,{marginBottom:'20px',transform:'scale(0.45)',height:'100px',
+    display:'flex',alignItems:'center',justifyContent:'center'});
+  const dpr=document.createElement('div');
+  Object.assign(dpr.style,{position:'relative',width:'200px',height:'200px'});
+
+  const DS=200,DPXS=DS*0.42,DSCL=0.4,DROT=30;
+  const DM=PETAL_MIN_SPREAD+(PETAL_MAX_SPREAD-PETAL_MIN_SPREAD)*DSCL;
+  const DSP=DM*(DS*0.2);
+  const DPS=PETAL_MIN_SCALE+(PETAL_MAX_SCALE-PETAL_MIN_SCALE)*DSCL;
+  const dg=document.createElement('div');
+  Object.assign(dg.style,{position:'absolute',inset:'-30px',borderRadius:'50%',
+    background:'radial-gradient(circle,rgba(94,209,191,0.08) 0%,transparent 65%)',
+    filter:'blur(30px)',transform:`scale(${0.7+DSCL*0.5})`});
+  dpr.appendChild(dg);
+  for(let i=0;i<PETAL_COUNT;i++){
+    const a=(i*360/PETAL_COUNT)+DROT,r=(a*Math.PI)/180;
+    const dp2=document.createElement('div');
+    Object.assign(dp2.style,{position:'absolute',width:DPXS+'px',height:DPXS+'px',borderRadius:'50%',
+      background:PETAL_COLORS[i],left:'50%',top:'50%',
+      marginLeft:(-DPXS/2)+'px',marginTop:(-DPXS/2)+'px',
+      transform:`translate(${Math.cos(r)*DSP}px,${Math.sin(r)*DSP}px) scale(${DPS})`,
+      filter:'blur(1px)'});
+    dpr.appendChild(dp2);
+  }
+  dpw.appendChild(dpr);
+
+  const dm=document.createElement('div');
+  dm.id='bDoneMsg';
+  Object.assign(dm.style,{...B_TYPE.title,fontFamily:B_FONT});
+
+  const ds2=document.createElement('div');
+  Object.assign(ds2.style,{...B_TYPE.subtitle,fontFamily:B_FONT,marginTop:'6px',marginBottom:'40px',
+    maxWidth:'280px',textAlign:'center',lineHeight:'1.6'});
+  ds2.textContent="Return to your conversation whenever you're ready";
+
+  const db=document.createElement('button');
+  db.textContent='Done';
+  Object.assign(db.style,{padding:'12px 36px',borderRadius:'999px',
+    border:'1px solid rgba(94,209,191,0.15)',background:'rgba(94,209,191,0.08)',
+    color:'#7FA8BE',fontSize:'14px',fontWeight:'500',cursor:'pointer',
+    letterSpacing:'1px',fontFamily:B_FONT});
+  db.addEventListener('click',hideBreathOverlay);
+
+  done.append(dpw,dm,ds2,db);
+  ov.append(active,done);
+  document.body.appendChild(ov);
+}
+
+// ─── updatePetals ─────────────────────────────────────────────────────────────
+// Drives all 6 petals + glow each rAF frame. NO CSS transitions — pure DOM.
+function updatePetals(scale,rotation){
+  const size=220;
+  const spread=(PETAL_MIN_SPREAD+(PETAL_MAX_SPREAD-PETAL_MIN_SPREAD)*scale)*(size*0.2);
+  const ps=PETAL_MIN_SCALE+(PETAL_MAX_SCALE-PETAL_MIN_SCALE)*scale;
+  for(let i=0;i<PETAL_COUNT;i++){
+    const a=(i*360/PETAL_COUNT)+rotation,r=(a*Math.PI)/180;
+    const el=byId('bPetal'+i);
+    if(el) el.style.transform=`translate(${Math.cos(r)*spread}px,${Math.sin(r)*spread}px) scale(${ps})`;
+  }
+  const g=byId('bGlow');
+  if(g) g.style.transform=`scale(${0.7+scale*0.5})`;
+}
+
+// ─── breathTick ───────────────────────────────────────────────────────────────
+// Single rAF loop. Runs through: pause (3 s) → breathing phases → done.
+function breathTick(now){
+  if(!breathState.pauseStartTime) breathState.pauseStartTime=now;
+  const te=(now-breathState.pauseStartTime)/1000; // totalElapsed
+  const PAUSE_DUR=3.0,XFADE_START=1.8,XFADE_LEN=1.2;
+
+  const pg=byId('bPauseGrp'),bg2=byId('bBreathGrp');
+  const ce=byId('bCount'),re=byId('bRemaining'),bl=byId('bPhaseLabel');
+
+  // ── PAUSE PHASE ──────────────────────────────────────────────────────────
+  if(te<PAUSE_DUR){
+    // Near-zero pulse so petal cluster is softly visible (PETAL_MIN_SPREAD=0.22 ensures no collapse)
+    updatePetals(Math.max(0,Math.sin(te*1.2)*0.06),te*5);
+
+    // Crossfade: pause text fades in, then out as breath text fades in
+    // Crossfade starts at 1.8 s, runs 1.2 s — finishes exactly at end of 3 s pause
+    let po,bo;
+    if(te<XFADE_START){
+      po=Math.min(1,te/0.7); bo=0;
+    } else {
+      const cf=(te-XFADE_START)/XFADE_LEN;
+      po=Math.max(0,1-cf*1.2); bo=Math.min(1,cf);
     }
+    if(pg)  pg.style.opacity=po;
+    if(bg2) bg2.style.opacity=bo;
+    if(ce)  ce.style.opacity=bo;
+    if(re)  re.style.opacity=bo;
+    breathState.animFrame=requestAnimationFrame(breathTick);
+    return;
+  }
 
-    function byId(id){ return document.getElementById(id); }
-    const pillMode = byId('pillMode'), vStatus = byId('vStatus'), vMic = byId('vMic'), vServer = byId('vServer');
-    const btnStart = byId('btnStart'), btnStop = byId('btnStop');
-    const overlay  = byId('overlay'), overlayTmr = byId('overlayTimer'), recDot = byId('recDot');
+  // ── BREATHING PHASE ──────────────────────────────────────────────────────
+  if(pg)  pg.style.opacity=0;
+  if(bg2) bg2.style.opacity=1;
+  if(ce)  ce.style.opacity=1;
 
-    function setStatus(s){ vStatus.textContent = s; }
-    function setMic(s){ vMic.textContent = s; }
-    function setServer(s){ vServer.textContent = s; }
-    function setMode(m){ pillMode.textContent = 'mode: ' + m; }
+  if(!breathState.breathStartTime) breathState.breathStartTime=now;
+  const be=(now-breathState.breathStartTime)/1000; // breathElapsed
+  const remaining=Math.max(0,breathState.duration-be);
 
-    // Breathing overlay — 4-4-4-4 cadence
-    function showOverlay(seconds = OVERLAY_DURATION, pattern = BREATH_PATTERN) {
-      const cueEl   = byId('breathCue');
-      const timerEl = byId('overlayTimer');
-      const dotEl   = byId('breathDot');
+  if(remaining<=0){
+    breathState.completionCount++;
+    showBreathDoneScreen();
+    return;
+  }
 
-      overlay.classList.add('show');
-      if (window.__overlayTick) clearInterval(window.__overlayTick);
+  if(re){ re.style.opacity=1; re.textContent=Math.ceil(remaining)+'s remaining'; }
 
-      let remain = seconds;
-      if (timerEl) timerEl.textContent = remain + 's';
+  // Compute current phase, 0-1 progress, and count-up (resets to 1 at each phase start)
+  const pat=breathState.pattern;
+  const cycleLen=pat.inhale+pat.hold1+pat.exhale+(pat.hold2||0);
+  const cp=be%cycleLen; // cyclePos
+  let phase='inhale',progress=0,count=1,cum=0;
+  for(const p of B_PHASES){
+    const d=pat[p]||0; if(!d) continue;
+    if(cp<cum+d){
+      const into=cp-cum;
+      progress=into/d;
+      count=Math.min(Math.floor(into)+1,d); // count resets to 1 at each phase
+      phase=p; break;
+    }
+    cum+=d;
+  }
 
-      const MIN_SCALE = 0.50;  // small
-      const MAX_SCALE = 0.98;  // large (absolute size capped by CSS)
+  // Scale: 0→1 inhale, hold1 at 1, 1→0 exhale, hold2 at 0
+  let ts;
+  switch(phase){
+    case 'inhale': ts=progress;   break;
+    case 'hold1':  ts=1;          break;
+    case 'exhale': ts=1-progress; break;
+    default:       ts=0;
+  }
+  updatePetals(ts,(PAUSE_DUR+be)*6);
+  if(bl) bl.textContent=B_PHASE_LABELS[phase];
+  if(ce) ce.textContent=count;
 
-      const phases = [
-        { label: 'Inhale', className:'breath-in',   len: pattern[0] ?? 4, scale: MAX_SCALE, easing:'cubic-bezier(0.25,0.8,0.5,1)' },
-        { label: 'Hold',   className:'breath-hold', len: pattern[1] ?? 4, scale: MAX_SCALE, easing:'linear' },
-        { label: 'Exhale', className:'breath-out',  len: pattern[2] ?? 4, scale: MIN_SCALE, easing:'cubic-bezier(0.4,0,0.2,1)' },
-        { label: 'Hold',   className:'breath-hold', len: pattern[3] ?? 4, scale: MIN_SCALE, easing:'linear' }
-      ];
+  breathState.animFrame=requestAnimationFrame(breathTick);
+}
 
-      let phaseIdx  = 0;
-      let phaseLeft = phases[0].len;
+// ─── showBreathDoneScreen ────────────────────────────────────────────────────
+function showBreathDoneScreen(){
+  const a=byId('bActiveScreen'),d=byId('bDoneScreen'),m=byId('bDoneMsg');
+  if(a) a.style.display='none';
+  if(d){
+    d.style.display='flex';
+    d.style.animation='none';
+    void d.offsetWidth; // force reflow so animation replays
+    d.style.animation='bSoftIn 1s ease forwards';
+  }
+  if(m) m.textContent=B_COMPLETION[(breathState.completionCount-1)%B_COMPLETION.length];
+}
 
-      // ensure the dot starts small immediately (no transition on first paint)
-      if (dotEl) {
-        dotEl.style.transition = 'none';
-        dotEl.style.transform  = `scale(${MIN_SCALE})`;
-        void dotEl.offsetWidth; // force reflow so Safari commits this state
+// ─── hideBreathOverlay ───────────────────────────────────────────────────────
+function hideBreathOverlay(){
+  if(breathState.animFrame){ cancelAnimationFrame(breathState.animFrame); breathState.animFrame=null; }
+  const ov=byId('breathOverlay');
+  if(ov) ov.style.display='none';
+  breathState.pauseStartTime=null;
+  breathState.breathStartTime=null;
+}
+
+// ─── showOverlay ─────────────────────────────────────────────────────────────
+// Keeps the same call signature as the previous implementation.
+// Called by the WebSocket 'trigger' handler — no changes needed at the call site.
+function showOverlay(seconds=OVERLAY_DURATION,pattern=BREATH_PATTERN){
+  if(breathState.animFrame){ cancelAnimationFrame(breathState.animFrame); breathState.animFrame=null; }
+
+  // Map legacy [inhale,hold1,exhale,hold2] array → pattern object
+  if(Array.isArray(pattern)){
+    breathState.pattern={inhale:pattern[0]??4,hold1:pattern[1]??4,exhale:pattern[2]??4,hold2:pattern[3]??0};
+  } else {
+    breathState.pattern=pattern;
+  }
+  breathState.duration=seconds;
+  breathState.pauseStartTime=null;
+  breathState.breathStartTime=null;
+
+  // Show overlay; ensure active screen visible, done screen hidden
+  const ov=byId('breathOverlay'),a=byId('bActiveScreen'),d=byId('bDoneScreen');
+  if(ov) ov.style.display='flex';
+  if(a)  a.style.display='flex';
+  if(d)  d.style.display='none';
+
+  // Reset element opacities
+  const pg=byId('bPauseGrp'),bg2=byId('bBreathGrp'),ce=byId('bCount'),re=byId('bRemaining');
+  if(pg)  pg.style.opacity=0;
+  if(bg2) bg2.style.opacity=0;
+  if(ce){ ce.style.opacity=0; ce.textContent='1'; }
+  if(re){ re.style.opacity=0; re.textContent='\u00A0'; }
+  updatePetals(0,0);
+
+  breathState.animFrame=requestAnimationFrame(breathTick);
+}
+
+// ─── tapFeedback (unchanged) ─────────────────────────────────────────────────
+function tapFeedback(el){ el.style.transform='scale(0.98)'; setTimeout(()=>{ el.style.transform='scale(1)'; },120); }
+
+// ─── WebSocket wiring (debug taps added; all logic unchanged) ────────────────
+function connectWS(){
+  if(ws&&(ws.readyState===WebSocket.OPEN||ws.readyState===WebSocket.CONNECTING)) return;
+  ws=new WebSocket(WS_URL);
+  setServer('connecting');
+  debugState.humeStatus='connecting';                       // DEBUG TAP
+
+  ws.onopen=()=>{ setServer('connected'); debugState.humeStatus='connected'; };   // DEBUG TAP
+  ws.onerror=()=>{ setServer('error'); debugState.humeStatus='error'; };          // DEBUG TAP
+  ws.onclose=()=>{
+    setServer('closed');
+    debugState.humeStatus='disconnected';                   // DEBUG TAP
+    if(vStatus.textContent==='listening') setTimeout(()=>connectWS(),1000);
+  };
+  ws.onmessage=(ev)=>{
+    let msg; try{ msg=JSON.parse(ev.data); } catch{ return; }
+    if(msg.type==='hello'){
+      setMode(msg.mode||'hume');
+    } else if(msg.type==='hume'){
+      setServer(msg.status||'—');
+      if(msg.score!=null) debugState.hyperScore=msg.score;  // DEBUG TAP
+      debugState.lastResponseAt=Date.now();                 // DEBUG TAP
+    } else if(msg.type==='trigger'){
+      if(msg.kind==='hyper'){
+        if(msg.score!=null) debugState.hyperScore=msg.score;// DEBUG TAP
+        debugState.lastResponseAt=Date.now();               // DEBUG TAP
+        showOverlay(OVERLAY_DURATION,BREATH_PATTERN);
       }
-      if (cueEl) {
-        cueEl.textContent = phases[0].label;
-        cueEl.className   = `breath-cue ${phases[0].className}`;
-      }
-
-      function applyPhase(i){
-        const p = phases[i];
-        if (cueEl) {
-          cueEl.textContent = p.label;
-          cueEl.className   = `breath-cue ${p.className}`;
-        }
-        if (dotEl) {
-          dotEl.style.transition = `transform ${Math.max(p.len,0.5)}s ${p.easing || 'ease-in-out'}`;
-          dotEl.style.transform  = `scale(${p.scale})`;
-        }
-        phaseLeft = p.len;
-      }
-
-      // kick first phase on next frame so the animation starts immediately
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => { applyPhase(0); });
-      });
-
-      window.__overlayTick = setInterval(() => {
-        remain -= 1;
-        if (timerEl) timerEl.textContent = Math.max(remain, 0) + 's';
-
-        phaseLeft -= 1;
-        if (phaseLeft <= 0) {
-          phaseIdx = (phaseIdx + 1) % phases.length;
-          applyPhase(phaseIdx);
-        }
-
-        if (remain <= 0) {
-          clearInterval(window.__overlayTick);
-          overlay.classList.remove('show');
-          if (dotEl) { dotEl.style.transition = 'transform 0.4s ease'; dotEl.style.transform = `scale(${MIN_SCALE})`; }
-        }
-      }, 1000);
     }
+  };
+}
 
-    function tapFeedback(el){ el.style.transform = 'scale(0.98)'; setTimeout(()=>{ el.style.transform = 'scale(1)'; }, 120); }
-
-    // WebSocket wiring
-    function connectWS(){
-      if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) return;
-      ws = new WebSocket(WS_URL);
-      setServer('connecting');
-      ws.onopen  = ()=> setServer('connected');
-      ws.onerror = ()=> setServer('error');
-      ws.onclose = ()=> {
-        setServer('closed');
-        if (vStatus.textContent === 'listening') setTimeout(()=> connectWS(), 1000);
-      };
-      ws.onmessage = (ev)=>{
-        let msg; try{ msg = JSON.parse(ev.data); } catch { return; }
-        if (msg.type === 'hello'){
-          setMode(msg.mode || 'hume');
-        } else if (msg.type === 'hume'){
-          setServer(msg.status || '—');
-        } else if (msg.type === 'trigger'){
-          if (msg.kind === 'hyper') showOverlay(OVERLAY_DURATION, BREATH_PATTERN);
-        }
-      };
+// ─── start (unchanged) ───────────────────────────────────────────────────────
+async function start(){
+  tapFeedback(btnStart);
+  setStatus('starting…');
+  btnStart.disabled=true; btnStart.classList.add('is-busy');
+  btnStop.disabled=true;
+  connectWS();
+  mediaStream=await navigator.mediaDevices.getUserMedia({audio:true});
+  setMic('on');
+  audioCtx=new (window.AudioContext||window.webkitAudioContext)({sampleRate:48000});
+  micSource=audioCtx.createMediaStreamSource(mediaStream);
+  const BUFFER_SIZE=4096;
+  processor=audioCtx.createScriptProcessor(BUFFER_SIZE,1,1);
+  const chunk=[];
+  let lastSent=performance.now();
+  processor.onaudioprocess=(e)=>{
+    const input=e.inputBuffer.getChannelData(0);
+    let sum=0; for(let i=0;i<input.length;i++) sum+=input[i]*input[i];
+    const rms=Math.sqrt(sum/input.length);
+    if(recDot){ if(rms>0.017) recDot.classList.add('rec-hot'); else recDot.classList.remove('rec-hot'); }
+    const copy=new Float32Array(input.length); copy.set(input); chunk.push(copy);
+    const now=performance.now();
+    if(now-lastSent>=CHUNK_MS){
+      const total=chunk.reduce((s,a)=>s+a.length,0);
+      const joined=new Float32Array(total);
+      let o=0; for(const buf of chunk){ joined.set(buf,o); o+=buf.length; }
+      chunk.length=0;
+      const b64=pcm16leToWavBase64(joined,audioCtx.sampleRate);
+      if(ws&&ws.readyState===WebSocket.OPEN){ try{ ws.send(JSON.stringify({type:'audio',data_b64:b64})); }catch{} }
+      lastSent=now;
     }
+  };
+  micSource.connect(processor);
+  processor.connect(audioCtx.destination);
+  btnStart.classList.remove('is-busy');
+  btnStop.disabled=false;
+  setStatus('listening');
+}
 
-    async function start(){
-      tapFeedback(btnStart);
-      setStatus('starting…');
+// ─── stop (unchanged) ────────────────────────────────────────────────────────
+async function stop(){
+  tapFeedback(btnStop);
+  setStatus('stopping…');
+  btnStop.disabled=true; btnStop.classList.add('is-busy');
+  try{ if(processor) processor.disconnect(); }catch{}
+  try{ if(micSource) micSource.disconnect(); }catch{}
+  try{ if(audioCtx) await audioCtx.close(); }catch{}
+  try{ if(mediaStream) mediaStream.getTracks().forEach(t=>t.stop()); }catch{}
+  mediaStream=null; audioCtx=null; processor=null; micSource=null;
+  setMic('off'); setStatus('idle');
+  btnStop.classList.remove('is-busy');
+  btnStart.disabled=false;
+}
 
-      // button UX
-      btnStart.disabled = true;
-      btnStart.classList.add('is-busy');
-      btnStop.disabled  = true;
+btnStart.addEventListener('click',start);
+btnStop .addEventListener('click',stop);
 
-      connectWS();
+// ─── INIT ────────────────────────────────────────────────────────────────────
+buildBreathOverlay();
+connectWS();
 
-      mediaStream = await navigator.mediaDevices.getUserMedia({ audio:true });
-      setMic('on');
+// ═══════════════════════════════════════════════════════════════════════════════
+//  DEBUG PANEL — only rendered when ?debug=1 is present
+// ═══════════════════════════════════════════════════════════════════════════════
+if(DEBUG){
+  const dp=document.createElement('div');
+  Object.assign(dp.style,{
+    position:'fixed',bottom:'16px',right:'16px',
+    background:'rgba(0,0,0,0.55)',backdropFilter:'blur(8px)',
+    border:'1px solid rgba(255,255,255,0.1)',borderRadius:'12px',
+    padding:'10px 14px',fontFamily:'monospace',fontSize:'11px',
+    color:'#7FA8BE',zIndex:'9999',lineHeight:'1.8',minWidth:'170px',
+    pointerEvents:'none',userSelect:'none',
+  });
+  // Three rows: label on left, live value on right
+  dp.innerHTML=
+    '<div style="display:flex;justify-content:space-between;gap:20px"><span>HYPER</span><span id="dbgHyper">0.00</span></div>'+
+    '<div style="display:flex;justify-content:space-between;gap:20px"><span>HUME</span><span id="dbgHume">disconnected</span></div>'+
+    '<div style="display:flex;justify-content:space-between;gap:20px"><span>LAST</span><span id="dbgLast">—</span></div>';
+  document.body.appendChild(dp);
 
-      audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 48000 });
-      micSource = audioCtx.createMediaStreamSource(mediaStream);
-
-      const BUFFER_SIZE = 4096;
-      processor = audioCtx.createScriptProcessor(BUFFER_SIZE, 1, 1);
-
-      const chunk = [];
-      let lastSent = performance.now();
-      processor.onaudioprocess = (e)=>{
-        const input = e.inputBuffer.getChannelData(0);
-
-        // live RMS indicator
-        let sum = 0;
-        for (let i=0;i<input.length;i++) sum += input[i]*input[i];
-        const rms = Math.sqrt(sum / input.length);
-        if (recDot) {
-          if (rms > 0.017) recDot.classList.add('rec-hot'); else recDot.classList.remove('rec-hot');
-        }
-
-        // accumulate to 1s WAV chunk
-        const copy = new Float32Array(input.length);
-        copy.set(input);
-        chunk.push(copy);
-
-        const now = performance.now();
-        if (now - lastSent >= CHUNK_MS){
-          const total = chunk.reduce((s,a)=>s+a.length,0);
-          const joined = new Float32Array(total);
-          let o = 0; for (const buf of chunk){ joined.set(buf, o); o += buf.length; }
-          chunk.length = 0;
-
-          const b64 = pcm16leToWavBase64(joined, audioCtx.sampleRate);
-          if (ws && ws.readyState === WebSocket.OPEN){
-            try { ws.send(JSON.stringify({ type:'audio', data_b64: b64 })); } catch {}
-          }
-          lastSent = now;
-        }
-      };
-
-      micSource.connect(processor);
-      processor.connect(audioCtx.destination);
-
-      // button UX
-      btnStart.classList.remove('is-busy');
-      btnStop.disabled = false;
-
-      setStatus('listening');
+  setInterval(()=>{
+    const he=byId('dbgHyper'),hue=byId('dbgHume'),le=byId('dbgLast');
+    if(he){
+      he.textContent=debugState.hyperScore.toFixed(2);
+      he.style.color=debugState.hyperScore>0.62?'#FF6B6B':'#5ED1BF';
     }
-
-    async function stop(){
-      tapFeedback(btnStop);
-      setStatus('stopping…');
-
-      // button UX
-      btnStop.disabled = true;
-      btnStop.classList.add('is-busy');
-
-      try { if (processor) processor.disconnect(); } catch {}
-      try { if (micSource) micSource.disconnect(); } catch {}
-      try { if (audioCtx) await audioCtx.close(); } catch {}
-      try { if (mediaStream) mediaStream.getTracks().forEach(t=>t.stop()); } catch {}
-      mediaStream = null; audioCtx = null; processor = null; micSource = null;
-
-      setMic('off');
-      setStatus('idle');
-
-      // button UX
-      btnStop.classList.remove('is-busy');
-      btnStart.disabled = false;
+    if(hue){
+      hue.textContent=debugState.humeStatus;
+      hue.style.color=debugState.humeStatus==='connected' ?'#5ED1BF'
+                     :debugState.humeStatus==='connecting'?'#FFD166'
+                     :'#FF6B6B';
     }
-
-    btnStart.addEventListener('click', start);
-    btnStop .addEventListener('click', stop);
-
-    // Connect early so pills show status
-    connectWS();
-  </script>
-
-  <!-- Success toast patch -->
-  <script>
-  (() => {
-    if (window.__toastPatchApplied) return;
-    window.__toastPatchApplied = true;
-
-    const overlay = document.getElementById('overlay');
-    const toast   = document.getElementById('successToast');
-    const btnRestart = document.getElementById('btnRestart');
-
-    const showToast = () => toast && toast.classList.add('show');
-    const hideToast = () => toast && toast.classList.remove('show');
-
-    const origShowOverlay = window.showOverlay;
-    if (typeof origShowOverlay === 'function') {
-      window.showOverlay = function(seconds = OVERLAY_DURATION) {
-        const endAt = Date.now() + seconds * 1000;
-        const tick = setInterval(() => {
-          if (Date.now() >= endAt) {
-            clearInterval(tick);
-            try { overlay && overlay.classList.remove('show'); } catch {}
-            showToast();
-          }
-        }, 200);
-        return origShowOverlay.apply(this, arguments);
-      };
+    if(le){
+      le.textContent=debugState.lastResponseAt===null
+        ?' —'
+        :((Date.now()-debugState.lastResponseAt)/1000).toFixed(1)+'s ago';
     }
-
-    btnRestart?.addEventListener('click', async () => {
-      hideToast();
-      try { if (typeof window.stop  === 'function') await window.stop(); } catch {}
-      try { if (typeof window.start === 'function') await window.start(); } catch {}
-    });
-  })();
-  </script>
+  },200);
+}
+</script>
 </body>
 </html>
