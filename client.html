@@ -3,82 +3,126 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover" />
-  <title>Couples Breath</title>
+  <title>Nagomi</title>
   <style>
     :root{
       --bg:#0b0b0c; --panel:#141417; --text:#eaeaea; --muted:#9aa0a6;
       --accent:#2563eb; --danger:#ef4444; --border:#2a2a2e;
     }
     *{ box-sizing:border-box; }
-    html,body{ height:100%; margin:0; background:var(--bg); color:var(--text);
-      font:16px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,Apple Color Emoji,Segoe UI Emoji; }
-    .page{ min-height:100%; display:grid; grid-template-rows:auto 1fr auto;
-      padding:16px; padding-bottom:max(16px,env(safe-area-inset-bottom)); gap:16px; }
-    .header{ display:flex; align-items:center; justify-content:space-between; gap:12px;
-      max-width:720px; width:100%; margin:0 auto; }
-    .brand{ font-weight:700; letter-spacing:0.2px; }
-    .pills{ display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
-    .pill{ display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px;
-      background:#1b1b1f; border:1px solid var(--border); color:var(--muted); font-size:13px; white-space:nowrap; }
+    html,body{
+      height:100%; margin:0;
+      background:linear-gradient(170deg,#1B2838 0%,#1E3141 30%,#1A2C3D 60%,#162231 100%);
+      color:var(--text);
+      font:16px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,Apple Color Emoji,Segoe UI Emoji;
+    }
+
+    /* ── Idle screen ── */
+    #idleScreen{
+      min-height:100vh;
+      display:flex; flex-direction:column; align-items:center;
+      padding:16px;
+      padding-bottom:max(24px,env(safe-area-inset-bottom));
+    }
+
+    /* Status pills row */
+    .status-pills{
+      display:flex; gap:8px; flex-wrap:wrap; justify-content:center;
+      width:100%; max-width:720px; margin-bottom:auto;
+    }
+    .pill{
+      display:inline-flex; align-items:center; gap:8px; padding:6px 10px;
+      border-radius:999px; background:rgba(20,20,23,0.55);
+      border:1px solid var(--border); color:var(--muted); font-size:13px; white-space:nowrap;
+    }
     .pill strong{ color:var(--text); font-weight:600; }
-    .card{ background:var(--panel); border:1px solid var(--border); border-radius:16px; padding:18px;
-      display:grid; gap:16px; align-content:start; max-width:720px; width:100%; margin:0 auto; }
-    .hint{ color:var(--muted); font-size:14px; }
-    .controls{ display:flex; justify-content:center; gap:16px; position:sticky; bottom:0;
-      background:linear-gradient(180deg,rgba(11,11,12,0),rgba(11,11,12,0.6)); padding-top:6px; }
-    button{ appearance:none; border:1px solid var(--border); border-radius:12px; padding:14px 16px;
-      font-weight:700; font-size:16px; color:white; background:#1c1c21; cursor:pointer;
-      transition:transform .06s ease,filter .06s ease,background .12s ease,border-color .12s ease;
-      touch-action:manipulation; position:relative; display:inline-flex; align-items:center; justify-content:center; }
-    button:active{ transform:scale(0.98); filter:brightness(0.96); }
-    button[disabled].is-busy{ opacity:.85; }
-    button[disabled].is-busy::after{ content:""; position:absolute; right:14px; top:50%; width:14px; height:14px;
-      margin-top:-7px; border-radius:50%; border:2px solid rgba(255,255,255,0.6); border-top-color:transparent;
-      animation:spin .8s linear infinite; }
+
+    /* Center content */
+    .idle-center{
+      flex:1;
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+    }
+    #idleTitle{
+      font-size:32px; font-weight:500; color:#E8F0F2;
+      letter-spacing:2px; text-align:center;
+      font-family:-apple-system,'SF Pro Display','Helvetica Neue',system-ui,sans-serif;
+    }
+    #idleTagline{
+      font-size:16px; color:#93B8CA; text-align:center;
+      margin-top:8px; margin-bottom:32px;
+      font-family:-apple-system,'SF Pro Display','Helvetica Neue',system-ui,sans-serif;
+    }
+    #idlePetalWrap{
+      position:relative; width:200px; height:200px;
+      display:flex; align-items:center; justify-content:center;
+    }
+    #idlePetalRoot{
+      position:relative; width:200px; height:200px;
+    }
+
+    /* Bottom area */
+    .idle-bottom{
+      display:flex; flex-direction:column; align-items:center;
+      gap:12px; padding-top:32px;
+    }
+
+    /* ── Toggle button ── */
+    #btnToggle{
+      width:220px;
+      padding:16px 48px;
+      border-radius:14px;
+      font-size:15px; font-weight:500;
+      background:rgba(94,209,191,0.12);
+      border:1px solid rgba(94,209,191,0.3);
+      color:#5ED1BF;
+      cursor:pointer;
+      font-family:-apple-system,'SF Pro Display','Helvetica Neue',system-ui,sans-serif;
+      transition:background .15s ease,border-color .15s ease,color .15s ease;
+      display:inline-flex; align-items:center; justify-content:center; gap:8px;
+      touch-action:manipulation; position:relative;
+    }
+    #btnToggle.btn-active{
+      background:rgba(255,107,107,0.12);
+      border-color:rgba(255,107,107,0.3);
+      color:#FF6B6B;
+    }
+    #btnToggle:active{ transform:scale(0.98); }
+    #btnToggle[disabled].is-busy{ opacity:.85; }
+    #btnToggle[disabled].is-busy::after{
+      content:""; position:absolute; right:14px; top:50%; width:14px; height:14px;
+      margin-top:-7px; border-radius:50%;
+      border:2px solid rgba(255,255,255,0.6); border-top-color:transparent;
+      animation:spin .8s linear infinite;
+    }
     @keyframes spin{ to{ transform:rotate(360deg); } }
-    .footer-spacer{ height:max(8px,env(safe-area-inset-bottom)); }
-    .rec-dot{ display:inline-block; width:10px; height:10px; margin-left:6px; border-radius:50%;
-      background:#666; box-shadow:0 0 0 rgba(255,0,0,0);
-      transition:background .15s ease,box-shadow .15s ease,transform .15s ease; }
-    .rec-hot{ background:#ef4444; box-shadow:0 0 10px rgba(239,68,68,0.55); transform:scale(1.1); }
 
-    /* ── Start / Stop button theming ── */
-    #btnStart{
-      background:rgba(94,209,191,0.12); border:1px solid rgba(94,209,191,0.3);
-      color:#5ED1BF; border-radius:14px; padding:14px 32px;
-      font-size:15px; font-weight:500; font-family:-apple-system,'SF Pro Display','Helvetica Neue',system-ui,sans-serif;
-      cursor:pointer;
-    }
-    #btnStart.btn-recording{
-      background:rgba(94,209,191,0.20); border:1px solid rgba(94,209,191,0.6);
-    }
-    #btnStop{
-      background:rgba(255,107,107,0.08); border:1px solid rgba(255,107,107,0.25);
-      color:#FF6B6B; border-radius:14px; padding:14px 32px;
-      font-size:15px; font-weight:500; font-family:-apple-system,'SF Pro Display','Helvetica Neue',system-ui,sans-serif;
-      cursor:pointer;
-    }
-
-    /* Pulsing dot inside Start button when recording */
+    /* Pulsing dot for active state */
     @keyframes bPulseDot{ 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.3);opacity:0.5} }
     .rec-pulse-dot{
       display:inline-block; width:8px; height:8px; border-radius:50%;
-      background:#5ED1BF; margin-right:8px; flex-shrink:0;
+      background:#FF6B6B; flex-shrink:0;
       animation:bPulseDot 1.5s ease-in-out infinite;
     }
 
-    /* ── Recording status bar (below header) ── */
+    /* Recording status bar */
     #recStatusBar{
-      max-width:720px; width:100%; margin:-4px auto 0;
-      padding:6px 16px; border-radius:8px;
       font-size:13px; font-weight:500; letter-spacing:0.3px;
       display:flex; align-items:center; justify-content:center; gap:6px;
-      transition:background .25s ease, color .25s ease;
+      padding:6px 16px; border-radius:8px;
+      transition:background .25s ease,color .25s ease;
     }
     #recStatusBar.rec-active{ background:rgba(94,209,191,0.10); color:#5ED1BF; }
     #recStatusBar.rec-inactive{ background:transparent; color:#9aa0a6; }
     @keyframes bStatusDot{ 0%,100%{opacity:1} 50%{opacity:0.35} }
     .status-dot-active{ animation:bStatusDot 1.5s ease-in-out infinite; }
+
+    /* rec-dot mic level indicator */
+    .rec-dot{
+      display:inline-block; width:10px; height:10px; margin-left:6px; border-radius:50%;
+      background:#666; box-shadow:0 0 0 rgba(255,0,0,0);
+      transition:background .15s ease,box-shadow .15s ease,transform .15s ease;
+    }
+    .rec-hot{ background:#ef4444; box-shadow:0 0 10px rgba(239,68,68,0.55); transform:scale(1.1); }
 
     /* ── Pause shimmer ── */
     @keyframes bShimmer{
@@ -94,29 +138,30 @@
   </style>
 </head>
 <body>
-<div class="page">
-  <header class="header">
-    <div class="brand">Couples Breath</div>
-    <div class="pills">
-      <div class="pill"><strong id="pillMode">mode: —</strong></div>
-      <div class="pill">status: <strong id="vStatus">idle</strong></div>
-      <div class="pill">mic: <strong id="vMic">off</strong></div>
-      <div class="pill">server: <strong id="vServer">—</strong></div>
-      <div class="pill">rec:<strong><span class="rec-dot" id="recDot"></span></strong></div>
+<div id="idleScreen">
+  <!-- Status pills -->
+  <div class="status-pills">
+    <div class="pill"><strong id="pillMode">mode: —</strong></div>
+    <div class="pill">status: <strong id="vStatus">idle</strong></div>
+    <div class="pill">mic: <strong id="vMic">off</strong></div>
+    <div class="pill">server: <strong id="vServer">—</strong></div>
+    <div class="pill">rec:<strong><span class="rec-dot" id="recDot"></span></strong></div>
+  </div>
+
+  <!-- Centre: title + tagline + idle petals -->
+  <div class="idle-center">
+    <div id="idleTitle">Nagomi</div>
+    <div id="idleTagline">Together as one</div>
+    <div id="idlePetalWrap">
+      <div id="idlePetalRoot"></div>
     </div>
-  </header>
-  <div id="recStatusBar" class="rec-inactive"><span class="status-dot">○</span> Not recording</div>
-  <main class="card">
-    <div class="hint">
-      Tap <strong>Start</strong> to begin streaming audio. When hyperarousal is detected,
-      you'll see <em>Pause and Breathe</em>.
-    </div>
-    <div class="controls">
-      <button id="btnStart" class="btn-start" type="button">Start</button>
-      <button id="btnStop"  class="btn-stop"  type="button">Stop</button>
-    </div>
-  </main>
-  <div class="footer-spacer"></div>
+  </div>
+
+  <!-- Bottom: toggle + status -->
+  <div class="idle-bottom">
+    <button id="btnToggle" type="button">Start Session</button>
+    <div id="recStatusBar" class="rec-inactive"><span style="font-size:10px;">○</span> Not recording</div>
+  </div>
 </div>
 
 <!-- Breath overlay built by buildBreathOverlay() at startup -->
@@ -150,7 +195,6 @@ function pcm16leToWavBase64(float32, sampleRate){
 }
 
 // ─── DEBUG STATE ─────────────────────────────────────────────────────────────
-// Written by WS handlers below; read by the debug panel (if DEBUG).
 const debugState = {
   hyperScore:     0,
   humeStatus:     'disconnected',
@@ -160,7 +204,7 @@ const debugState = {
 // ─── DOM HELPERS ─────────────────────────────────────────────────────────────
 function byId(id){ return document.getElementById(id); }
 const pillMode=byId('pillMode'),vStatus=byId('vStatus'),vMic=byId('vMic'),vServer=byId('vServer');
-const btnStart=byId('btnStart'),btnStop=byId('btnStop'),recDot=byId('recDot');
+const btnToggle=byId('btnToggle'),recDot=byId('recDot');
 function setStatus(s){ vStatus.textContent=s; }
 function setMic(s)   { vMic.textContent=s; }
 function setServer(s){ vServer.textContent=s; }
@@ -171,7 +215,6 @@ function setMode(m)  { pillMode.textContent='mode: '+m; }
 //  Ported from breath-v9.jsx. No React, no build step, pure DOM + rAF.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-// Typography tokens (match breath-v9 exactly)
 const B_FONT = "-apple-system,'SF Pro Display','Helvetica Neue',system-ui,sans-serif";
 const B_BG   = "linear-gradient(170deg,#1B2838 0%,#1E3141 30%,#1A2C3D 60%,#162231 100%)";
 const B_TYPE = {
@@ -181,7 +224,6 @@ const B_TYPE = {
   meta:     {fontSize:'13px',fontWeight:'400',color:'#5A8A9E',letterSpacing:'1.5px'},
 };
 
-// All named patterns (kept for completeness; showOverlay maps the legacy array to a pattern object)
 const B_PATTERNS = {
   "4-4-6":   {inhale:4,hold1:4,exhale:6,hold2:0},
   "4-4-4-4": {inhale:4,hold1:4,exhale:4,hold2:4},
@@ -202,7 +244,7 @@ const PETAL_COLORS     = [
   "rgba(94,209,191,0.50)","rgba(72,191,227,0.45)","rgba(129,212,172,0.45)",
   "rgba(94,209,191,0.40)","rgba(72,191,227,0.40)","rgba(129,212,172,0.45)",
 ];
-const PETAL_MIN_SPREAD = 0.22;   // petals never fully collapse
+const PETAL_MIN_SPREAD = 0.22;
 const PETAL_MAX_SPREAD = 1.0;
 const PETAL_MIN_SCALE  = 0.7;
 const PETAL_MAX_SCALE  = 1.0;
@@ -210,39 +252,95 @@ const PETAL_MAX_SCALE  = 1.0;
 // Mutable breath state
 const breathState = {
   animFrame:       null,
-  pauseStartTime:  null,   // set on first rAF tick (latch pattern)
-  breathStartTime: null,   // set when pause phase ends
+  pauseStartTime:  null,
+  breathStartTime: null,
   duration:        OVERLAY_DURATION,
   pattern:         {inhale:4,hold1:4,exhale:4,hold2:4},
   completionCount: 0,
 };
 
+// ─── Idle petal state ─────────────────────────────────────────────────────────
+let idleRafId    = null;
+let idleRotation = 0;
+let idleLastTime = null;
+
+// ─── buildIdlePetals ──────────────────────────────────────────────────────────
+// Creates the petal DOM nodes inside #idlePetalRoot. Called once at startup.
+function buildIdlePetals(){
+  const root = byId('idlePetalRoot');
+  if(!root) return;
+  const SIZE = 200, PPX = SIZE * 0.42;
+
+  const glow = document.createElement('div');
+  glow.id = 'idleGlow';
+  Object.assign(glow.style,{position:'absolute',inset:'-30px',borderRadius:'50%',
+    background:'radial-gradient(circle,rgba(94,209,191,0.08) 0%,transparent 65%)',
+    filter:'blur(30px)',pointerEvents:'none'});
+  root.appendChild(glow);
+
+  for(let i=0;i<PETAL_COUNT;i++){
+    const p = document.createElement('div');
+    p.id = 'idlePetal'+i;
+    Object.assign(p.style,{position:'absolute',width:PPX+'px',height:PPX+'px',borderRadius:'50%',
+      background:PETAL_COLORS[i],left:'50%',top:'50%',
+      marginLeft:(-PPX/2)+'px',marginTop:(-PPX/2)+'px',filter:'blur(1px)'});
+    root.appendChild(p);
+  }
+}
+
+// ─── updateIdlePetals ─────────────────────────────────────────────────────────
+function updateIdlePetals(scale, rotation){
+  const size = 200;
+  const spread = (PETAL_MIN_SPREAD+(PETAL_MAX_SPREAD-PETAL_MIN_SPREAD)*scale)*(size*0.2);
+  const ps = PETAL_MIN_SCALE+(PETAL_MAX_SCALE-PETAL_MIN_SCALE)*scale;
+  for(let i=0;i<PETAL_COUNT;i++){
+    const a=(i*360/PETAL_COUNT)+rotation, r=(a*Math.PI)/180;
+    const el=byId('idlePetal'+i);
+    if(el) el.style.transform=`translate(${Math.cos(r)*spread}px,${Math.sin(r)*spread}px) scale(${ps})`;
+  }
+  const g=byId('idleGlow');
+  if(g) g.style.transform=`scale(${0.7+scale*0.5})`;
+}
+
+// ─── Idle rAF loop — 4°/sec rotation ─────────────────────────────────────────
+function idlePetalTick(now){
+  if(idleLastTime===null) idleLastTime=now;
+  const dt=(now-idleLastTime)/1000;
+  idleLastTime=now;
+  idleRotation+=4*dt;
+  updateIdlePetals(0.45, idleRotation);
+  idleRafId=requestAnimationFrame(idlePetalTick);
+}
+
+function startIdlePetal(){
+  if(idleRafId) return;
+  idleLastTime=null;
+  idleRafId=requestAnimationFrame(idlePetalTick);
+}
+
+function stopIdlePetal(){
+  if(idleRafId){ cancelAnimationFrame(idleRafId); idleRafId=null; idleLastTime=null; }
+}
+
 // ─── buildBreathOverlay ───────────────────────────────────────────────────────
-// Constructs full overlay DOM and appends it to <body>. Called once at startup.
 function buildBreathOverlay(){
-  // Keyframe for done-screen entrance
   const kf=document.createElement('style');
   kf.textContent='@keyframes bSoftIn{0%{opacity:0;transform:translateY(8px)}100%{opacity:1;transform:translateY(0)}}';
   document.head.appendChild(kf);
 
-  // Root: position:fixed; inset:0; hidden by default
   const ov=document.createElement('div');
   ov.id='breathOverlay';
   Object.assign(ov.style,{position:'fixed',inset:'0',zIndex:'50',display:'none',background:B_BG,fontFamily:B_FONT});
 
-  // ── ACTIVE SCREEN (pause → breathing) ──────────────────────────────────────
+  // ── ACTIVE SCREEN ──────────────────────────────────────────────────────────
   const active=document.createElement('div');
   active.id='bActiveScreen';
   Object.assign(active.style,{position:'absolute',inset:'0',display:'flex',
     flexDirection:'column',alignItems:'center',justifyContent:'center'});
 
-  // Text zone: fixed 56px — title(30px) + 6px gap + subtitle(20px)
-  // Both pause & breathing text are stacked here with absolute positioning.
-  // Layout height is constant; only opacity changes.
   const tz=document.createElement('div');
   Object.assign(tz.style,{position:'relative',width:'300px',height:'56px',marginBottom:'2px'});
 
-  // — Pause text group —
   const pg=document.createElement('div');
   pg.id='bPauseGrp';
   Object.assign(pg.style,{position:'absolute',inset:'0',display:'flex',flexDirection:'column',
@@ -251,13 +349,12 @@ function buildBreathOverlay(){
   pt.id='bPauseTitle';
   Object.assign(pt.style,{...B_TYPE.title,fontFamily:B_FONT,lineHeight:'30px'});
   pt.textContent="Let's pause";
-  const ps=document.createElement('span');
-  ps.id='bPauseSubtitle';
-  Object.assign(ps.style,{...B_TYPE.subtitle,fontFamily:B_FONT,marginTop:'6px',lineHeight:'20px'});
-  ps.textContent="Take this moment together";
-  pg.append(pt,ps);
+  const ps2=document.createElement('span');
+  ps2.id='bPauseSubtitle';
+  Object.assign(ps2.style,{...B_TYPE.subtitle,fontFamily:B_FONT,marginTop:'6px',lineHeight:'20px'});
+  ps2.textContent="Take this moment together";
+  pg.append(pt,ps2);
 
-  // — Breathing text group —
   const bg2=document.createElement('div');
   bg2.id='bBreathGrp';
   Object.assign(bg2.style,{position:'absolute',inset:'0',display:'flex',flexDirection:'column',
@@ -266,14 +363,12 @@ function buildBreathOverlay(){
   bl.id='bPhaseLabel';
   Object.assign(bl.style,{...B_TYPE.title,fontFamily:B_FONT,lineHeight:'30px'});
   bl.textContent='Inhale';
-  // Invisible spacer holds subtitle-row height — remaining timer never causes layout shift
   const bsp=document.createElement('span');
   Object.assign(bsp.style,{...B_TYPE.subtitle,fontFamily:B_FONT,marginTop:'6px',lineHeight:'20px',opacity:'0'});
   bsp.innerHTML='&nbsp;';
   bg2.append(bl,bsp);
   tz.append(pg,bg2);
 
-  // Petals area 220×220
   const pa=document.createElement('div');
   Object.assign(pa.style,{position:'relative',width:'220px',height:'220px',display:'flex',
     alignItems:'center',justifyContent:'center'});
@@ -289,7 +384,7 @@ function buildBreathOverlay(){
     filter:'blur(30px)',pointerEvents:'none'});
   pr.appendChild(glow);
 
-  const PPX=220*0.42; // petal pixel size
+  const PPX=220*0.42;
   for(let i=0;i<PETAL_COUNT;i++){
     const p=document.createElement('div');
     p.id='bPetal'+i;
@@ -300,7 +395,6 @@ function buildBreathOverlay(){
   }
   pa.appendChild(pr);
 
-  // Count (large numeral centred on petals)
   const ce=document.createElement('div');
   ce.id='bCount';
   Object.assign(ce.style,{position:'absolute',inset:'0',display:'flex',alignItems:'center',
@@ -309,14 +403,12 @@ function buildBreathOverlay(){
   ce.textContent='1';
   pa.appendChild(ce);
 
-  // Remaining timer — always reserves 18px height (opacity drives visibility)
   const re=document.createElement('div');
   re.id='bRemaining';
   Object.assign(re.style,{marginTop:'14px',height:'18px',...B_TYPE.meta,fontFamily:B_FONT,
     opacity:'0',fontVariantNumeric:'tabular-nums',display:'flex',alignItems:'center',justifyContent:'center'});
   re.textContent='\u00A0';
 
-  // End button
   const ew=document.createElement('div');
   Object.assign(ew.style,{position:'absolute',bottom:'8%',left:'0',right:'0',textAlign:'center'});
   const eb=document.createElement('button');
@@ -336,7 +428,6 @@ function buildBreathOverlay(){
   Object.assign(done.style,{position:'absolute',inset:'0',display:'none',
     flexDirection:'column',alignItems:'center',justifyContent:'center'});
 
-  // Static petal cluster (scale=0.4, rotation=30, size=200) — idle-card treatment
   const dpw=document.createElement('div');
   Object.assign(dpw.style,{marginBottom:'20px',transform:'scale(0.45)',height:'100px',
     display:'flex',alignItems:'center',justifyContent:'center'});
@@ -387,7 +478,6 @@ function buildBreathOverlay(){
 }
 
 // ─── updatePetals ─────────────────────────────────────────────────────────────
-// Drives all 6 petals + glow each rAF frame. NO CSS transitions — pure DOM.
 function updatePetals(scale,rotation){
   const size=220;
   const spread=(PETAL_MIN_SPREAD+(PETAL_MAX_SPREAD-PETAL_MIN_SPREAD)*scale)*(size*0.2);
@@ -402,31 +492,23 @@ function updatePetals(scale,rotation){
 }
 
 // ─── breathTick ───────────────────────────────────────────────────────────────
-// Single rAF loop. Runs through: pause (3 s) → breathing phases → done.
 function breathTick(now){
   if(!breathState.pauseStartTime) breathState.pauseStartTime=now;
-  const te=(now-breathState.pauseStartTime)/1000; // totalElapsed
+  const te=(now-breathState.pauseStartTime)/1000;
   const PAUSE_DUR=7.0,XFADE_START=5.5,XFADE_LEN=1.2;
 
   const pg=byId('bPauseGrp'),bg2=byId('bBreathGrp');
   const ce=byId('bCount'),re=byId('bRemaining'),bl=byId('bPhaseLabel');
   const bpt=byId('bPauseTitle'),bps=byId('bPauseSubtitle');
 
-  // ── PAUSE PHASE ──────────────────────────────────────────────────────────
   if(te<PAUSE_DUR){
-    // Near-zero pulse so petal cluster is softly visible (PETAL_MIN_SPREAD=0.22 ensures no collapse)
     updatePetals(Math.max(0,Math.sin(te*1.2)*0.06),te*5);
-
-    // Crossfade: pause text fades in, then out as breath text fades in
-    // Crossfade starts at 5.5 s, runs 1.2 s — finishes exactly at end of 7 s pause
     let po,bo;
     if(te<XFADE_START){
       po=Math.min(1,te/0.7); bo=0;
-      // shimmer active while in pause and before crossfade
       if(bpt && !bpt.classList.contains('b-shimmer')) bpt.classList.add('b-shimmer');
       if(bps && !bps.classList.contains('b-shimmer-sub')) bps.classList.add('b-shimmer-sub');
     } else {
-      // crossfade beginning — remove shimmer
       if(bpt) bpt.classList.remove('b-shimmer');
       if(bps) bps.classList.remove('b-shimmer-sub');
       const cf=(te-XFADE_START)/XFADE_LEN;
@@ -439,17 +521,15 @@ function breathTick(now){
     breathState.animFrame=requestAnimationFrame(breathTick);
     return;
   }
-  // Ensure shimmer is off once we leave pause phase
   if(bpt) bpt.classList.remove('b-shimmer');
   if(bps) bps.classList.remove('b-shimmer-sub');
 
-  // ── BREATHING PHASE ──────────────────────────────────────────────────────
   if(pg)  pg.style.opacity=0;
   if(bg2) bg2.style.opacity=1;
   if(ce)  ce.style.opacity=1;
 
   if(!breathState.breathStartTime) breathState.breathStartTime=now;
-  const be=(now-breathState.breathStartTime)/1000; // breathElapsed
+  const be=(now-breathState.breathStartTime)/1000;
   const remaining=Math.max(0,breathState.duration-be);
 
   if(remaining<=0){
@@ -460,23 +540,21 @@ function breathTick(now){
 
   if(re){ re.style.opacity=1; re.textContent=Math.ceil(remaining)+'s remaining'; }
 
-  // Compute current phase, 0-1 progress, and count-up (resets to 1 at each phase start)
   const pat=breathState.pattern;
   const cycleLen=pat.inhale+pat.hold1+pat.exhale+(pat.hold2||0);
-  const cp=be%cycleLen; // cyclePos
+  const cp=be%cycleLen;
   let phase='inhale',progress=0,count=1,cum=0;
   for(const p of B_PHASES){
     const d=pat[p]||0; if(!d) continue;
     if(cp<cum+d){
       const into=cp-cum;
       progress=into/d;
-      count=Math.min(Math.floor(into)+1,d); // count resets to 1 at each phase
+      count=Math.min(Math.floor(into)+1,d);
       phase=p; break;
     }
     cum+=d;
   }
 
-  // Scale: 0→1 inhale, hold1 at 1, 1→0 exhale, hold2 at 0
   let ts;
   switch(phase){
     case 'inhale': ts=progress;   break;
@@ -498,7 +576,7 @@ function showBreathDoneScreen(){
   if(d){
     d.style.display='flex';
     d.style.animation='none';
-    void d.offsetWidth; // force reflow so animation replays
+    void d.offsetWidth;
     d.style.animation='bSoftIn 1s ease forwards';
   }
   if(m) m.textContent=B_COMPLETION[(breathState.completionCount-1)%B_COMPLETION.length];
@@ -507,7 +585,6 @@ function showBreathDoneScreen(){
 // ─── hideBreathOverlay ───────────────────────────────────────────────────────
 function hideBreathOverlay(){
   if(breathState.animFrame){ cancelAnimationFrame(breathState.animFrame); breathState.animFrame=null; }
-  // Clean up shimmer classes in case overlay is closed mid-pause
   const bpt=byId('bPauseTitle'),bps=byId('bPauseSubtitle');
   if(bpt) bpt.classList.remove('b-shimmer');
   if(bps) bps.classList.remove('b-shimmer-sub');
@@ -515,16 +592,15 @@ function hideBreathOverlay(){
   if(ov) ov.style.display='none';
   breathState.pauseStartTime=null;
   breathState.breathStartTime=null;
-  updateRecordingUI(); // refresh status bar immediately after overlay closes
+  updateRecordingUI();
+  startIdlePetal(); // resume idle petal rotation
 }
 
 // ─── showOverlay ─────────────────────────────────────────────────────────────
-// Keeps the same call signature as the previous implementation.
-// Called by the WebSocket 'trigger' handler — no changes needed at the call site.
 function showOverlay(seconds=OVERLAY_DURATION,pattern=BREATH_PATTERN){
   if(breathState.animFrame){ cancelAnimationFrame(breathState.animFrame); breathState.animFrame=null; }
+  stopIdlePetal(); // pause idle rotation while overlay is active
 
-  // Map legacy [inhale,hold1,exhale,hold2] array → pattern object
   if(Array.isArray(pattern)){
     breathState.pattern={inhale:pattern[0]??4,hold1:pattern[1]??4,exhale:pattern[2]??4,hold2:pattern[3]??0};
   } else {
@@ -534,13 +610,11 @@ function showOverlay(seconds=OVERLAY_DURATION,pattern=BREATH_PATTERN){
   breathState.pauseStartTime=null;
   breathState.breathStartTime=null;
 
-  // Show overlay; ensure active screen visible, done screen hidden
   const ov=byId('breathOverlay'),a=byId('bActiveScreen'),d=byId('bDoneScreen');
   if(ov) ov.style.display='flex';
   if(a)  a.style.display='flex';
   if(d)  d.style.display='none';
 
-  // Reset element opacities
   const pg=byId('bPauseGrp'),bg2=byId('bBreathGrp'),ce=byId('bCount'),re=byId('bRemaining');
   if(pg)  pg.style.opacity=0;
   if(bg2) bg2.style.opacity=0;
@@ -557,19 +631,15 @@ let isRecording = false;
 function updateRecordingUI(){
   const sb = byId('recStatusBar');
   if(isRecording){
-    // Start button: pulsing dot + "Recording…"
-    btnStart.classList.add('btn-recording');
-    btnStart.innerHTML = '<span class="rec-pulse-dot"></span>Recording\u2026';
-    // Status bar
+    btnToggle.classList.add('btn-active');
+    btnToggle.innerHTML = '<span class="rec-pulse-dot"></span>Stop Session';
     if(sb){
       sb.className = 'rec-active';
       sb.innerHTML = '<span class="status-dot-active" style="font-size:10px;">●</span> Recording active';
     }
   } else {
-    // Start button: plain
-    btnStart.classList.remove('btn-recording');
-    btnStart.textContent = 'Start';
-    // Status bar
+    btnToggle.classList.remove('btn-active');
+    btnToggle.textContent = 'Start Session';
     if(sb){
       sb.className = 'rec-inactive';
       sb.innerHTML = '<span style="font-size:10px;">○</span> Not recording';
@@ -577,21 +647,21 @@ function updateRecordingUI(){
   }
 }
 
-// ─── tapFeedback (unchanged) ─────────────────────────────────────────────────
-function tapFeedback(el){ el.style.transform='scale(0.98)'; setTimeout(()=>{ el.style.transform='scale(1)'; },120); }
+// ─── tapFeedback ─────────────────────────────────────────────────────────────
+function tapFeedback(el){ el.style.transform='scale(0.98)'; setTimeout(()=>{ el.style.transform=''; },120); }
 
-// ─── WebSocket wiring (debug taps added; all logic unchanged) ────────────────
+// ─── WebSocket ───────────────────────────────────────────────────────────────
 function connectWS(){
   if(ws&&(ws.readyState===WebSocket.OPEN||ws.readyState===WebSocket.CONNECTING)) return;
   ws=new WebSocket(WS_URL);
   setServer('connecting');
-  debugState.humeStatus='connecting';                       // DEBUG TAP
+  debugState.humeStatus='connecting';
 
-  ws.onopen=()=>{ setServer('connected'); debugState.humeStatus='connected'; };   // DEBUG TAP
-  ws.onerror=()=>{ setServer('error'); debugState.humeStatus='error'; };          // DEBUG TAP
+  ws.onopen=()=>{ setServer('connected'); debugState.humeStatus='connected'; };
+  ws.onerror=()=>{ setServer('error'); debugState.humeStatus='error'; };
   ws.onclose=()=>{
     setServer('closed');
-    debugState.humeStatus='disconnected';                   // DEBUG TAP
+    debugState.humeStatus='disconnected';
     if(vStatus.textContent==='listening') setTimeout(()=>connectWS(),1000);
   };
   ws.onmessage=(ev)=>{
@@ -600,24 +670,23 @@ function connectWS(){
       setMode(msg.mode||'hume');
     } else if(msg.type==='hume'){
       setServer(msg.status||'—');
-      if(msg.score!=null) debugState.hyperScore=msg.score;  // DEBUG TAP
-      debugState.lastResponseAt=Date.now();                 // DEBUG TAP
+      if(msg.score!=null) debugState.hyperScore=msg.score;
+      debugState.lastResponseAt=Date.now();
     } else if(msg.type==='trigger'){
       if(msg.kind==='hyper'){
-        if(msg.score!=null) debugState.hyperScore=msg.score;// DEBUG TAP
-        debugState.lastResponseAt=Date.now();               // DEBUG TAP
+        if(msg.score!=null) debugState.hyperScore=msg.score;
+        debugState.lastResponseAt=Date.now();
         showOverlay(OVERLAY_DURATION,BREATH_PATTERN);
       }
     }
   };
 }
 
-// ─── start (unchanged) ───────────────────────────────────────────────────────
+// ─── start ───────────────────────────────────────────────────────────────────
 async function start(){
-  tapFeedback(btnStart);
+  tapFeedback(btnToggle);
   setStatus('starting…');
-  btnStart.disabled=true; btnStart.classList.add('is-busy');
-  btnStop.disabled=true;
+  btnToggle.disabled=true; btnToggle.classList.add('is-busy');
   connectWS();
   mediaStream=await navigator.mediaDevices.getUserMedia({audio:true});
   setMic('on');
@@ -646,38 +715,40 @@ async function start(){
   };
   micSource.connect(processor);
   processor.connect(audioCtx.destination);
-  btnStart.classList.remove('is-busy');
-  btnStop.disabled=false;
+  btnToggle.classList.remove('is-busy');
+  btnToggle.disabled=false;
   setStatus('listening');
   isRecording=true; updateRecordingUI();
 }
 
-// ─── stop (unchanged) ────────────────────────────────────────────────────────
+// ─── stop ────────────────────────────────────────────────────────────────────
 async function stop(){
-  tapFeedback(btnStop);
+  tapFeedback(btnToggle);
   setStatus('stopping…');
-  btnStop.disabled=true; btnStop.classList.add('is-busy');
+  btnToggle.disabled=true; btnToggle.classList.add('is-busy');
   try{ if(processor) processor.disconnect(); }catch{}
   try{ if(micSource) micSource.disconnect(); }catch{}
   try{ if(audioCtx) await audioCtx.close(); }catch{}
   try{ if(mediaStream) mediaStream.getTracks().forEach(t=>t.stop()); }catch{}
   mediaStream=null; audioCtx=null; processor=null; micSource=null;
   setMic('off'); setStatus('idle');
-  btnStop.classList.remove('is-busy');
-  btnStart.disabled=false;
+  btnToggle.classList.remove('is-busy');
+  btnToggle.disabled=false;
   isRecording=false; updateRecordingUI();
 }
 
-btnStart.addEventListener('click',start);
-btnStop .addEventListener('click',stop);
+// Single toggle handler
+btnToggle.addEventListener('click', ()=>{ if(isRecording) stop(); else start(); });
 
 // ─── INIT ────────────────────────────────────────────────────────────────────
 buildBreathOverlay();
-updateRecordingUI(); // set initial button + status bar state
+buildIdlePetals();
+updateRecordingUI();
+startIdlePetal();   // begin slow petal rotation on load
 connectWS();
 
 // ═══════════════════════════════════════════════════════════════════════════════
-//  DEBUG PANEL — only rendered when ?debug=1 is present
+//  DEBUG PANEL
 // ═══════════════════════════════════════════════════════════════════════════════
 if(DEBUG){
   const dp=document.createElement('div');
@@ -689,7 +760,6 @@ if(DEBUG){
     color:'#7FA8BE',zIndex:'9999',lineHeight:'1.8',minWidth:'170px',
     pointerEvents:'none',userSelect:'none',
   });
-  // Three rows: label on left, live value on right
   dp.innerHTML=
     '<div style="display:flex;justify-content:space-between;gap:20px"><span>HYPER</span><span id="dbgHyper">0.00</span></div>'+
     '<div style="display:flex;justify-content:space-between;gap:20px"><span>HUME</span><span id="dbgHume">disconnected</span></div>'+
