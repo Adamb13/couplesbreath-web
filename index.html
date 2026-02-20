@@ -728,11 +728,13 @@ function connectWS(){
     let msg; try{ msg=JSON.parse(ev.data); } catch{ return; }
     if(msg.type==='hello'){
       setMode(msg.mode||'hume');
-    } else if(msg.type==='hume'){
+    } else if(msg.type==='risk'){
+      // Ongoing risk updates from backend
       setServer(msg.status||'—');
-      if(msg.score!=null) debugState.hyperScore=msg.score;
+      if(msg.hyper!=null) debugState.hyperScore=msg.hyper;
       debugState.lastResponseAt=Date.now();
     } else if(msg.type==='trigger'){
+      // Trigger event (threshold crossed)
       if(msg.kind==='hyper'){
         if(msg.score!=null) debugState.hyperScore=msg.score;
         debugState.lastResponseAt=Date.now();
