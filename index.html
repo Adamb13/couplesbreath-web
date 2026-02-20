@@ -238,52 +238,61 @@ function playGentleBell() {
 function playOmSound() {
   const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   const duration = 3.0;
-  const freq = 136; // Traditional Om frequency
+  const freq = 108; // Deeper grounding frequency
   
-  // Fundamental + harmonics for richness
+  // Fundamental + rich harmonics (singing bowl / temple bell)
   const fundamental = audioCtx.createOscillator();
-  const harmonic1 = audioCtx.createOscillator();
   const harmonic2 = audioCtx.createOscillator();
+  const harmonic3 = audioCtx.createOscillator();
+  const harmonic5 = audioCtx.createOscillator();
   
-  fundamental.frequency.value = freq;
-  harmonic1.frequency.value = freq * 2.0;
-  harmonic2.frequency.value = freq * 3.0;
+  fundamental.frequency.value = freq;       // 108 Hz
+  harmonic2.frequency.value = freq * 2.0;   // 216 Hz
+  harmonic3.frequency.value = freq * 3.0;   // 324 Hz
+  harmonic5.frequency.value = freq * 5.0;   // 540 Hz (shimmer)
   
   fundamental.type = 'sine';
-  harmonic1.type = 'sine';
   harmonic2.type = 'sine';
+  harmonic3.type = 'sine';
+  harmonic5.type = 'sine';
   
   const fundamentalGain = audioCtx.createGain();
-  const harmonic1Gain = audioCtx.createGain();
   const harmonic2Gain = audioCtx.createGain();
+  const harmonic3Gain = audioCtx.createGain();
+  const harmonic5Gain = audioCtx.createGain();
   const masterGain = audioCtx.createGain();
   
   fundamental.connect(fundamentalGain);
-  harmonic1.connect(harmonic1Gain);
   harmonic2.connect(harmonic2Gain);
+  harmonic3.connect(harmonic3Gain);
+  harmonic5.connect(harmonic5Gain);
   fundamentalGain.connect(masterGain);
-  harmonic1Gain.connect(masterGain);
   harmonic2Gain.connect(masterGain);
+  harmonic3Gain.connect(masterGain);
+  harmonic5Gain.connect(masterGain);
   masterGain.connect(audioCtx.destination);
   
   fundamentalGain.gain.value = 1.0;
-  harmonic1Gain.gain.value = 0.4;
-  harmonic2Gain.gain.value = 0.2;
+  harmonic2Gain.gain.value = 0.4;
+  harmonic3Gain.gain.value = 0.25;
+  harmonic5Gain.gain.value = 0.15;
   
   const now = audioCtx.currentTime;
   
-  // Soft attack + long sustain + gentle fade
+  // Softer swell + exponential fade over full 3s
   masterGain.gain.setValueAtTime(0, now);
-  masterGain.gain.linearRampToValueAtTime(0.08, now + 0.2);
+  masterGain.gain.linearRampToValueAtTime(0.09, now + 0.25);
   masterGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
   
   fundamental.start(now);
-  harmonic1.start(now);
   harmonic2.start(now);
+  harmonic3.start(now);
+  harmonic5.start(now);
   
   fundamental.stop(now + duration);
-  harmonic1.stop(now + duration);
   harmonic2.stop(now + duration);
+  harmonic3.stop(now + duration);
+  harmonic5.stop(now + duration);
 }
 
 // ─── WAV ENCODER (untouched) ─────────────────────────────────────────────────
@@ -644,6 +653,7 @@ function breathTick(now){
 
   if(remaining<=0){
     breathState.completionCount++;
+    playOmSound(); // Play Om before showing done screen
     showBreathDoneScreen();
     return;
   }
@@ -694,7 +704,6 @@ function showBreathDoneScreen(){
 
 // ─── hideBreathOverlay ───────────────────────────────────────────────────────
 function hideBreathOverlay(){
-  playOmSound();
   if(breathState.animFrame){ cancelAnimationFrame(breathState.animFrame); breathState.animFrame=null; }
   const bpt=byId('bPauseTitle'),bps=byId('bPauseSubtitle');
   if(bpt) bpt.classList.remove('b-shimmer');
