@@ -365,10 +365,11 @@ function setMode(m)  { pillMode.textContent='mode: '+m; }
 const B_FONT = "-apple-system,'SF Pro Display','Helvetica Neue',system-ui,sans-serif";
 const B_BG   = "linear-gradient(170deg,#1B2838 0%,#1E3141 30%,#1A2C3D 60%,#162231 100%)";
 const B_TYPE = {
-  title:    {fontSize:'26px',fontWeight:'500',color:'#E8F0F2',letterSpacing:'0.5px'},
+  title:    {fontSize:'36px',fontWeight:'500',color:'#E8F0F2',letterSpacing:'0.5px'},
   subtitle: {fontSize:'16px',fontWeight:'400',color:'#93B8CA'},
-  count:    {fontSize:'48px',fontWeight:'200',color:'rgba(225,238,242,0.55)'},
-  meta:     {fontSize:'13px',fontWeight:'400',color:'#5A8A9E',letterSpacing:'1.5px'},
+  count:    {fontSize:'64px',fontWeight:'700',color:'rgba(225,238,242,0.55)'},
+  meta:     {fontSize:'20px',fontWeight:'400',color:'#5A8A9E',letterSpacing:'1.5px'},
+  phaseLabel: {fontSize:'28px',fontWeight:'700',color:'#E8F0F2',letterSpacing:'0.5px'},
 };
 
 const B_PATTERNS = {
@@ -489,7 +490,7 @@ function buildBreathOverlay(){
     flexDirection:'column',alignItems:'center',justifyContent:'center'});
 
   const tz=document.createElement('div');
-  Object.assign(tz.style,{position:'relative',width:'300px',height:'56px',marginBottom:'2px'});
+  Object.assign(tz.style,{position:'relative',width:'90%',maxWidth:'500px',height:'80px',marginBottom:'20px'});
 
   const pg=document.createElement('div');
   pg.id='bPauseGrp';
@@ -497,11 +498,11 @@ function buildBreathOverlay(){
     alignItems:'center',justifyContent:'flex-start',opacity:'0',pointerEvents:'none'});
   const pt=document.createElement('span');
   pt.id='bPauseTitle';
-  Object.assign(pt.style,{...B_TYPE.title,fontFamily:B_FONT,lineHeight:'30px'});
+  Object.assign(pt.style,{...B_TYPE.title,fontFamily:B_FONT,lineHeight:'42px'});
   pt.textContent="Let's pause";
   const ps2=document.createElement('span');
   ps2.id='bPauseSubtitle';
-  Object.assign(ps2.style,{...B_TYPE.subtitle,fontFamily:B_FONT,marginTop:'6px',lineHeight:'20px'});
+  Object.assign(ps2.style,{...B_TYPE.subtitle,fontFamily:B_FONT,marginTop:'6px',lineHeight:'22px'});
   ps2.textContent="Take this moment together";
   pg.append(pt,ps2);
 
@@ -511,7 +512,7 @@ function buildBreathOverlay(){
     alignItems:'center',justifyContent:'flex-start',opacity:'0',pointerEvents:'none'});
   const bl=document.createElement('span');
   bl.id='bPhaseLabel';
-  Object.assign(bl.style,{...B_TYPE.title,fontFamily:B_FONT,lineHeight:'30px'});
+  Object.assign(bl.style,{...B_TYPE.phaseLabel,fontFamily:B_FONT,lineHeight:'34px'});
   bl.textContent='Inhale';
   const bsp=document.createElement('span');
   Object.assign(bsp.style,{...B_TYPE.subtitle,fontFamily:B_FONT,marginTop:'6px',lineHeight:'20px',opacity:'0'});
@@ -520,27 +521,26 @@ function buildBreathOverlay(){
   tz.append(pg,bg2);
 
   const pa=document.createElement('div');
-  Object.assign(pa.style,{position:'relative',width:'220px',height:'220px',display:'flex',
+  Object.assign(pa.style,{position:'relative',width:'min(75vh, 90vw)',height:'min(75vh, 90vw)',display:'flex',
     alignItems:'center',justifyContent:'center'});
 
   const pr=document.createElement('div');
   pr.id='bPetalsRoot';
-  Object.assign(pr.style,{position:'relative',width:'220px',height:'220px'});
+  Object.assign(pr.style,{position:'relative',width:'100%',height:'100%'});
 
   const glow=document.createElement('div');
   glow.id='bGlow';
-  Object.assign(glow.style,{position:'absolute',inset:'-30px',borderRadius:'50%',
+  Object.assign(glow.style,{position:'absolute',inset:'-15%',borderRadius:'50%',
     background:'radial-gradient(circle,rgba(94,209,191,0.08) 0%,transparent 65%)',
     filter:'blur(30px)',pointerEvents:'none'});
   pr.appendChild(glow);
 
-  const PPX=220*0.42;
   for(let i=0;i<PETAL_COUNT;i++){
     const p=document.createElement('div');
     p.id='bPetal'+i;
-    Object.assign(p.style,{position:'absolute',width:PPX+'px',height:PPX+'px',borderRadius:'50%',
+    Object.assign(p.style,{position:'absolute',width:'42%',height:'42%',borderRadius:'50%',
       background:PETAL_COLORS[i],left:'50%',top:'50%',
-      marginLeft:(-PPX/2)+'px',marginTop:(-PPX/2)+'px',filter:'blur(1px)'});
+      transform:'translate(-50%, -50%)',filter:'blur(1px)'});
     pr.appendChild(p);
   }
   pa.appendChild(pr);
@@ -555,7 +555,7 @@ function buildBreathOverlay(){
 
   const re=document.createElement('div');
   re.id='bRemaining';
-  Object.assign(re.style,{marginTop:'14px',height:'18px',...B_TYPE.meta,fontFamily:B_FONT,
+  Object.assign(re.style,{marginTop:'24px',height:'28px',...B_TYPE.meta,fontFamily:B_FONT,
     opacity:'0',fontVariantNumeric:'tabular-nums',display:'flex',alignItems:'center',justifyContent:'center'});
   re.textContent='\u00A0';
 
@@ -629,13 +629,12 @@ function buildBreathOverlay(){
 
 // ─── updatePetals ─────────────────────────────────────────────────────────────
 function updatePetals(scale,rotation){
-  const size=220;
-  const spread=(PETAL_MIN_SPREAD+(PETAL_MAX_SPREAD-PETAL_MIN_SPREAD)*scale)*(size*0.2);
+  const spread=(PETAL_MIN_SPREAD+(PETAL_MAX_SPREAD-PETAL_MIN_SPREAD)*scale)*20;
   const ps=PETAL_MIN_SCALE+(PETAL_MAX_SCALE-PETAL_MIN_SCALE)*scale;
   for(let i=0;i<PETAL_COUNT;i++){
     const a=(i*360/PETAL_COUNT)+rotation,r=(a*Math.PI)/180;
     const el=byId('bPetal'+i);
-    if(el) el.style.transform=`translate(${Math.cos(r)*spread}px,${Math.sin(r)*spread}px) scale(${ps})`;
+    if(el) el.style.transform=`translate(calc(-50% + ${Math.cos(r)*spread}%), calc(-50% + ${Math.sin(r)*spread}%)) scale(${ps})`;
   }
   const g=byId('bGlow');
   if(g) g.style.transform=`scale(${0.7+scale*0.5})`;
@@ -659,6 +658,9 @@ function breathTick(now){
       if(bpt && !bpt.classList.contains('b-shimmer')) bpt.classList.add('b-shimmer');
       if(bps && !bps.classList.contains('b-shimmer-sub')) bps.classList.add('b-shimmer-sub');
     } else {
+      // Pre-populate breath text during crossfade to prevent flicker
+      if(bl) bl.textContent='Inhale';
+      if(ce) ce.textContent='1';
       if(bpt) bpt.classList.remove('b-shimmer');
       if(bps) bps.classList.remove('b-shimmer-sub');
       const cf=(te-XFADE_START)/XFADE_LEN;
