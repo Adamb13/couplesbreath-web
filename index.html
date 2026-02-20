@@ -604,6 +604,7 @@ function hideBreathOverlay(){
 
 // ─── showOverlay ─────────────────────────────────────────────────────────────
 function showOverlay(seconds=OVERLAY_DURATION,pattern=BREATH_PATTERN){
+  if (navigator.vibrate) navigator.vibrate(200);
   if(breathState.animFrame){ cancelAnimationFrame(breathState.animFrame); breathState.animFrame=null; }
   stopIdlePetal(); // pause idle rotation while overlay is active
 
