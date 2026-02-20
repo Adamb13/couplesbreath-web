@@ -185,20 +185,53 @@ let mediaStream, audioCtx, processor, micSource, ws;
 // ─── GENTLE BELL ─────────────────────────────────────────────────────────────
 function playGentleBell() {
   const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
+  const duration = 4.0;
+  const freq = 432; // Natural tuning
   
-  osc.connect(gain);
-  gain.connect(audioCtx.destination);
+  // Fundamental + harmonics (singing bowl)
+  const fundamental = audioCtx.createOscillator();
+  const harmonic1 = audioCtx.createOscillator();
+  const harmonic2 = audioCtx.createOscillator();
   
-  osc.frequency.value = 528; // peaceful frequency
-  osc.type = 'sine';
+  fundamental.frequency.value = freq;
+  harmonic1.frequency.value = freq * 1.5;
+  harmonic2.frequency.value = freq * 2.0;
   
-  gain.gain.setValueAtTime(0.12, audioCtx.currentTime); // soft volume
-  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 2.5); // gentle fade
+  fundamental.type = 'sine';
+  harmonic1.type = 'sine';
+  harmonic2.type = 'sine';
   
-  osc.start(audioCtx.currentTime);
-  osc.stop(audioCtx.currentTime + 2.5);
+  const fundamentalGain = audioCtx.createGain();
+  const harmonic1Gain = audioCtx.createGain();
+  const harmonic2Gain = audioCtx.createGain();
+  const masterGain = audioCtx.createGain();
+  
+  fundamental.connect(fundamentalGain);
+  harmonic1.connect(harmonic1Gain);
+  harmonic2.connect(harmonic2Gain);
+  fundamentalGain.connect(masterGain);
+  harmonic1Gain.connect(masterGain);
+  harmonic2Gain.connect(masterGain);
+  masterGain.connect(audioCtx.destination);
+  
+  fundamentalGain.gain.value = 1.0;
+  harmonic1Gain.gain.value = 0.3;
+  harmonic2Gain.gain.value = 0.15;
+  
+  const now = audioCtx.currentTime;
+  
+  // Soft attack + decay
+  masterGain.gain.setValueAtTime(0, now);
+  masterGain.gain.linearRampToValueAtTime(0.10, now + 0.15);
+  masterGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+  
+  fundamental.start(now);
+  harmonic1.start(now);
+  harmonic2.start(now);
+  
+  fundamental.stop(now + duration);
+  harmonic1.stop(now + duration);
+  harmonic2.stop(now + duration);
 }
 
 // ─── WAV ENCODER (untouched) ─────────────────────────────────────────────────
