@@ -110,6 +110,26 @@
       animation:bPulseDot 1.5s ease-in-out infinite;
     }
 
+    /* Cycle selector buttons */
+    .cycle-btn{
+      background:rgba(94,209,191,0.12);
+      border:1px solid rgba(94,209,191,0.3);
+      color:#5ED1BF;
+      border-radius:20px;
+      padding:8px 20px;
+      font-size:15px;
+      font-weight:500;
+      cursor:pointer;
+      transition:all 0.2s;
+    }
+    .cycle-btn.selected{
+      background:rgba(94,209,191,0.25);
+      border-color:rgba(94,209,191,0.6);
+    }
+    .cycle-btn:hover{
+      background:rgba(94,209,191,0.18);
+    }
+
     /* Recording status bar */
     #recStatusBar{
       font-size:13px; font-weight:500; letter-spacing:0.3px;
@@ -154,10 +174,18 @@
     <div class="pill">rec:<strong><span class="rec-dot" id="recDot"></span></strong></div>
   </div>
 
-  <!-- Centre: title + tagline + idle petals -->
+  <!-- Centre: title + tagline + cycle selector + idle petals -->
   <div class="idle-center">
     <div id="idleTitle">Nagomi</div>
     <div id="idleTagline">Together as one</div>
+    <div style="text-align:center; margin-top:20px;">
+      <div style="font-size:14px; color:#93B8CA; margin-bottom:10px;">Breath cycles:</div>
+      <div id="cycleSelector" style="display:flex; gap:12px; justify-content:center;">
+        <button class="cycle-btn" data-cycles="3">3</button>
+        <button class="cycle-btn" data-cycles="5">5</button>
+        <button class="cycle-btn" data-cycles="10">10</button>
+      </div>
+    </div>
     <div id="idlePetalWrap">
       <div id="idlePetalRoot"></div>
     </div>
@@ -222,7 +250,7 @@ function playGentleBell() {
   
   // Soft attack + decay
   masterGain.gain.setValueAtTime(0, now);
-  masterGain.gain.linearRampToValueAtTime(0.10, now + 0.15);
+  masterGain.gain.linearRampToValueAtTime(0.18, now + 0.15);
   masterGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
   
   fundamental.start(now);
@@ -281,7 +309,7 @@ function playOmSound() {
   
   // Softer swell + exponential fade over full 3s
   masterGain.gain.setValueAtTime(0, now);
-  masterGain.gain.linearRampToValueAtTime(0.09, now + 0.25);
+  masterGain.gain.linearRampToValueAtTime(0.16, now + 0.25);
   masterGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
   
   fundamental.start(now);
@@ -377,6 +405,9 @@ const breathState = {
   pattern:         {inhale:4,hold1:4,exhale:4,hold2:4},
   completionCount: 0,
 };
+
+// ─── Cycle selection state ───────────────────────────────────────────────────
+let selectedCycles = 5; // default
 
 // ─── Idle petal state ─────────────────────────────────────────────────────────
 let idleRafId    = null;
@@ -728,7 +759,12 @@ function showOverlay(seconds=OVERLAY_DURATION,pattern=BREATH_PATTERN){
   } else {
     breathState.pattern=pattern;
   }
-  breathState.duration=seconds;
+  
+  // Calculate duration based on selected cycles
+  const cycleLen = breathState.pattern.inhale + breathState.pattern.hold1 + 
+                   breathState.pattern.exhale + (breathState.pattern.hold2||0);
+  const PAUSE_DUR = 7.0;
+  breathState.duration = PAUSE_DUR + (cycleLen * selectedCycles);
   breathState.pauseStartTime=null;
   breathState.breathStartTime=null;
 
@@ -870,6 +906,28 @@ buildIdlePetals();
 updateRecordingUI();
 startIdlePetal();   // begin slow petal rotation on load
 connectWS();
+
+// ─── Cycle selector initialization ───────────────────────────────────────────
+(function(){
+  // Load from localStorage
+  const stored = localStorage.getItem('nagomiBreathCycles');
+  if(stored) selectedCycles = parseInt(stored, 10) || 5;
+  
+  // Apply initial selection
+  const buttons = document.querySelectorAll('.cycle-btn');
+  buttons.forEach(btn => {
+    const cycles = parseInt(btn.getAttribute('data-cycles'), 10);
+    if(cycles === selectedCycles) btn.classList.add('selected');
+    
+    // Add click handler
+    btn.addEventListener('click', () => {
+      selectedCycles = cycles;
+      localStorage.setItem('nagomiBreathCycles', cycles.toString());
+      buttons.forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+    });
+  });
+})();
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  DEBUG PANEL
