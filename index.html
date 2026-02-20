@@ -182,6 +182,25 @@ const DEBUG  = qs.has('debug');
 const CHUNK_MS = 1000;
 let mediaStream, audioCtx, processor, micSource, ws;
 
+// ─── GENTLE BELL ─────────────────────────────────────────────────────────────
+function playGentleBell() {
+  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  
+  osc.frequency.value = 528; // peaceful frequency
+  osc.type = 'sine';
+  
+  gain.gain.setValueAtTime(0.12, audioCtx.currentTime); // soft volume
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 2.5); // gentle fade
+  
+  osc.start(audioCtx.currentTime);
+  osc.stop(audioCtx.currentTime + 2.5);
+}
+
 // ─── WAV ENCODER (untouched) ─────────────────────────────────────────────────
 function pcm16leToWavBase64(float32, sampleRate){
   const numChannels=1,bytesPerSample=2,blockAlign=numChannels*bytesPerSample;
@@ -605,6 +624,7 @@ function hideBreathOverlay(){
 // ─── showOverlay ─────────────────────────────────────────────────────────────
 function showOverlay(seconds=OVERLAY_DURATION,pattern=BREATH_PATTERN){
   if (navigator.vibrate) navigator.vibrate(200);
+  playGentleBell();
   if(breathState.animFrame){ cancelAnimationFrame(breathState.animFrame); breathState.animFrame=null; }
   stopIdlePetal(); // pause idle rotation while overlay is active
 
