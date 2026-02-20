@@ -265,8 +265,9 @@ function playGentleBell() {
 // ─── OM SOUND ────────────────────────────────────────────────────────────────
 function playOmSound() {
   const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  const duration = 3.0;
-  const freq = 108; // Deeper grounding frequency
+  const duration = 6.0;
+  const startFreq = 144; // Traditional Om start frequency
+  const endFreq = 200;   // Pitch rises in final 2 seconds
   
   // Fundamental + rich harmonics (singing bowl / temple bell)
   const fundamental = audioCtx.createOscillator();
@@ -274,10 +275,10 @@ function playOmSound() {
   const harmonic3 = audioCtx.createOscillator();
   const harmonic5 = audioCtx.createOscillator();
   
-  fundamental.frequency.value = freq;       // 108 Hz
-  harmonic2.frequency.value = freq * 2.0;   // 216 Hz
-  harmonic3.frequency.value = freq * 3.0;   // 324 Hz
-  harmonic5.frequency.value = freq * 5.0;   // 540 Hz (shimmer)
+  fundamental.frequency.value = startFreq;       // 144 Hz
+  harmonic2.frequency.value = startFreq * 2.0;   // 288 Hz
+  harmonic3.frequency.value = startFreq * 3.0;   // 432 Hz
+  harmonic5.frequency.value = startFreq * 5.0;   // 720 Hz (shimmer)
   
   fundamental.type = 'sine';
   harmonic2.type = 'sine';
@@ -307,7 +308,17 @@ function playOmSound() {
   
   const now = audioCtx.currentTime;
   
-  // Softer swell + exponential fade over full 3s
+  // Pitch rise in last 2 seconds (traditional A-U-M sound)
+  fundamental.frequency.setValueAtTime(startFreq, now);
+  fundamental.frequency.exponentialRampToValueAtTime(endFreq, now + 6);
+  harmonic2.frequency.setValueAtTime(startFreq * 2.0, now);
+  harmonic2.frequency.exponentialRampToValueAtTime(endFreq * 2.0, now + 6);
+  harmonic3.frequency.setValueAtTime(startFreq * 3.0, now);
+  harmonic3.frequency.exponentialRampToValueAtTime(endFreq * 3.0, now + 6);
+  harmonic5.frequency.setValueAtTime(startFreq * 5.0, now);
+  harmonic5.frequency.exponentialRampToValueAtTime(endFreq * 5.0, now + 6);
+  
+  // Softer swell + exponential fade over full 6s
   masterGain.gain.setValueAtTime(0, now);
   masterGain.gain.linearRampToValueAtTime(0.16, now + 0.25);
   masterGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
@@ -405,6 +416,7 @@ const breathState = {
   duration:        OVERLAY_DURATION,
   pattern:         {inhale:4,hold1:4,exhale:4,hold2:4},
   completionCount: 0,
+  lastCount:       null, // Track last count to prevent flicker
 };
 
 // ─── Cycle selection state ───────────────────────────────────────────────────
@@ -717,7 +729,11 @@ function breathTick(now){
   }
   updatePetals(ts,(PAUSE_DUR+be)*6);
   if(bl) bl.textContent=B_PHASE_LABELS[phase];
-  if(ce) ce.textContent=count;
+  // Only update count if it changed (prevents flicker)
+  if(ce && count !== breathState.lastCount) {
+    ce.textContent=count;
+    breathState.lastCount=count;
+  }
 
   breathState.animFrame=requestAnimationFrame(breathTick);
 }
@@ -745,6 +761,7 @@ function hideBreathOverlay(){
   if(ov) ov.style.display='none';
   breathState.pauseStartTime=null;
   breathState.breathStartTime=null;
+  breathState.lastCount=null; // Reset count tracker
   updateRecordingUI();
   startIdlePetal(); // resume idle petal rotation
 }
@@ -769,6 +786,7 @@ function showOverlay(seconds=OVERLAY_DURATION,pattern=BREATH_PATTERN){
   breathState.duration = PAUSE_DUR + (cycleLen * selectedCycles);
   breathState.pauseStartTime=null;
   breathState.breathStartTime=null;
+  breathState.lastCount=null; // Reset count tracker for clean start
 
   const ov=byId('breathOverlay'),a=byId('bActiveScreen'),d=byId('bDoneScreen');
   if(ov) ov.style.display='flex';
